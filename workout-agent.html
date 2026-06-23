@@ -139,4 +139,145 @@ function renderSetup(){
   const col=el('div',{style:{width:'100%',maxWidth:'380px',display:'flex',flexDirection:'column',gap:'12px'}});col.append(inp,btn,hint);w.appendChild(col);return w;
 }
 function renderHdr(){
-  const
+  const h=el('div',{className:'hdr'});h.appendChild(el('h1',{},'Workout Agent'));
+  const g=el('button',{className:'icon-btn',onClick:()=>{S.showSettings=true;S.settingsVal=S.apiKey;render();}},'⚙');h.appendChild(g);return h;
+}
+function renderTabs(){
+  const t=el('div',{className:'tabs'});const lc=Object.keys(S.lib).length;
+  [['workout','Workout'],['library',lc?`Library (${lc})`:'Library']].forEach(([id,lbl])=>{const b=el('button',{className:'tab'+(S.tab===id?' on':''),onClick:()=>{S.tab=id;render();}},lbl);t.appendChild(b);});return t;
+}
+function renderModal(){
+  const ov=el('div',{className:'modal-overlay',onClick:e=>{if(e.target===ov){S.showSettings=false;render();}}});
+  const m=el('div',{className:'modal'});m.appendChild(el('h3',{},'Settings'));
+  m.appendChild(el('label',{className:'flbl'},'Anthropic API Key'));
+  const inp=el('input',{type:'password',placeholder:'sk-ant-…',value:S.settingsVal||'',onInput:e=>S.settingsVal=e.target.value});m.appendChild(inp);
+  m.appendChild(el('p',{className:'hint'},'Stored in your browser only.'));
+  const btns=el('div',{className:'modal-btns'});
+  btns.appendChild(el('button',{className:'btn btn-ghost',onClick:()=>{S.showSettings=false;render();}},'Cancel'));
+  btns.appendChild(el('button',{className:'btn btn-pri',onClick:()=>{const v=(S.settingsVal||'').trim();if(!v)return;localStorage.setItem(LS_KEY,v);S.apiKey=v;S.showSettings=false;render();}},'Save'));
+  m.appendChild(btns);ov.appendChild(m);return ov;
+}
+function renderWorkout(){
+  const w=el('div',{});const le=Object.entries(S.lib);
+  if(!S.noticeDismissed&&!le.length){const n=el('div',{className:'notice'});n.appendChild(el('span',{},'→ Upload exercise images in the Library tab first.'));const x=el('button',{className:'notice-x',onClick:()=>{localStorage.setItem(LS_NOTICE,'1');S.noticeDismissed=true;render();}},'×');n.appendChild(x);w.appendChild(n);}
+  // goal
+  const gf=el('div',{className:'field'});gf.appendChild(el('span',{className:'flbl'},'Goal'));const gs=el('div',{className:'seg'});
+  [['lose_fat','Lose fat'],['recomp','Lose fat + build'],['gain_muscle','Gain muscle']].forEach(([id,lbl])=>{const b=el('button',{className:'seg-btn'+(S.goal===id?' on':''),onClick:()=>{S.goal=id;render();}},lbl);gs.appendChild(b);});gf.appendChild(gs);w.appendChild(gf);
+  // focus
+  const ff=el('div',{className:'field'});ff.appendChild(el('span',{className:'flbl'},'Focus'));const fp=el('div',{className:'pills'});
+  MUSCLES.forEach(m=>{const p=el('button',{className:'pill'+(S.muscles.includes(m.id)?' on':''),onClick:()=>{if(m.id==='full_body'){S.muscles=['full_body'];}else{let nx=S.muscles.filter(x=>x!=='full_body');if(nx.includes(m.id))nx=nx.filter(x=>x!==m.id);else nx.push(m.id);S.muscles=nx.length===0?['full_body']:nx;}render();}},m.label);fp.appendChild(p);});ff.appendChild(fp);w.appendChild(ff);
+  // time
+  const tf=el('div',{className:'field'});tf.appendChild(el('span',{className:'flbl'},'Time'));const ts=el('div',{className:'seg'});
+  TIMES.forEach(t=>{const b=el('button',{className:'seg-btn'+(S.time===t?' on':''),onClick:()=>{S.time=t;render();}},t);ts.appendChild(b);});tf.appendChild(ts);w.appendChild(tf);
+  // style
+  const sf=el('div',{className:'field'});sf.appendChild(el('span',{className:'flbl'},'Training style'));const sg=el('div',{className:'style-grid'});
+  STYLES.forEach(s=>{const c=el('div',{className:'scard'+(S.style===s.id?' on':''),onClick:()=>{S.style=s.id;render();}});c.appendChild(el('p',{className:'scard-title'},s.title));c.appendChild(el('p',{className:'scard-desc'},s.desc));sg.appendChild(c);});sf.appendChild(sg);w.appendChild(sf);
+  // equipment
+  const ef=el('div',{className:'field'});ef.appendChild(el('span',{className:'flbl'},'Equipment'));const ep=el('div',{className:'pills'});
+  EQ_GROUPS.forEach(g=>{const cnt=le.filter(([k])=>g.cats.includes(getCat(k))).length;const p=el('button',{className:'pill'+(S.eq.includes(g.id)?' on':''),onClick:()=>{if(S.eq.includes(g.id))S.eq=S.eq.filter(e=>e!==g.id);else S.eq.push(g.id);render();}},cnt>0?`${g.label} · ${cnt}`:g.label);ep.appendChild(p);});ef.appendChild(ep);
+  const fc=getFiltered().length;if(fc>0&&le.length>0)ef.appendChild(el('p',{className:'eq-count'},`${fc} exercises available`));w.appendChild(ef);
+  // gen btn
+  const gb=el('button',{className:'gen-btn',onClick:doGenerate},S.loading?'Building your workout…':'Generate workout ↗');if(S.loading)gb.setAttribute('disabled','true');w.appendChild(gb);
+  if(S.error)w.appendChild(el('div',{className:'err'},S.error));
+  if(S.workout)w.appendChild(renderWO());
+  return w;
+}
+async function doGenerate(){
+  if(!S.apiKey){S.error='No API key — tap ⚙ to add it.';render();return;}
+  S.loading=true;S.workout=null;S.error=null;render();
+  const filtered=getFiltered(),hasLib=Object.keys(S.lib).length>0;
+  const exList=filtered.length>0?`EXERCISE LIBRARY — use ONLY these exact names:\n${filtered.join(', ')}`:hasLib?'No exercises match. Use expert knowledge.':'No library. Use expert knowledge.';
+  const ml=S.muscles.includes('full_body')?'Full Body':S.muscles.map(id=>MUSCLES.find(m=>m.id===id)?.label||id).join(', ');
+  const el2=EQ_GROUPS.filter(g=>S.eq.includes(g.id)).map(g=>g.label).join(', ')||'Body Weight only';
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':S.apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1600,system:'Expert strength coach. Return ONLY a single valid JSON object. No markdown, no backticks. Start with { end with }.',messages:[{role:'user',content:`Generate a ${S.time} strength workout.\nFocus: ${ml}\nEquipment: ${el2}\nStyle: ${S.style}\n${GOAL_TEXT[S.goal]}\n\n${exList}\n\nRULES: Use EXACT exercise names. Fast-paced, cardio through pace not running. Body Weight always allowed.\n\n${SCHEMAS[S.style]}\n\nReturn: {"workout_name":"string","warmup":[{"name":"string","duration":"string"}],"groups":[],"cooldown":[{"name":"string","duration":"string"}]}`}]})});
+    const data=await res.json();if(data.error)throw new Error(data.error.message);
+    const raw=data.content?.find(b=>b.type==='text')?.text||'';
+    const clean=raw.replace(/^```[\w]*\n?/,'').replace(/\n?```$/,'').trim();
+    const parsed=JSON.parse(clean);if(!parsed.groups||!Array.isArray(parsed.groups))throw new Error('Invalid structure.');
+    S.workout=parsed;S.loading=false;render();
+    setTimeout(()=>{document.querySelectorAll('.group-card').forEach((c,i)=>setTimeout(()=>c.classList.add('show'),i*110));},50);
+  }catch(e){S.error=`Could not generate: ${e.message}`;S.loading=false;render();}
+}
+function renderWO(){
+  const wo=S.workout,w=el('div',{});w.appendChild(el('hr',{className:'divider'}));w.appendChild(el('p',{className:'wo-title'},wo.workout_name));
+  if(wo.warmup?.length){w.appendChild(el('p',{className:'sec-lbl'},'Warm-up'));wo.warmup.forEach(x=>w.appendChild(el('div',{className:'wu-item'},`${x.name} — ${x.duration}`)));}
+  w.appendChild(el('p',{className:'sec-lbl'},'Workout'));
+  (wo.groups||[]).forEach(g=>w.appendChild(renderGroup(g)));
+  if(wo.cooldown?.length){w.appendChild(el('p',{className:'sec-lbl',style:{marginTop:'1rem'}},'Cool-down'));wo.cooldown.forEach(x=>w.appendChild(el('div',{className:'wu-item'},`${x.name} — ${x.duration}`)));}
+  return w;
+}
+function renderGroup(g){
+  const card=el('div',{className:'group-card'});
+  const hdr=el('div',{className:'g-hdr'});hdr.appendChild(el('span',{className:'g-hdr-title'},g.group_label));
+  const isC=g.type==='circuit',isS=g.type==='superset';
+  if(isC||isS){
+    hdr.appendChild(el('span',{className:'g-hdr-meta'},isC?`${g.sets_or_rounds} rounds`:`${g.sets_or_rounds} sets`));card.appendChild(hdr);
+    (g.exercises||[]).forEach((ex,j)=>{
+      const row=el('div',{className:'ex-row'});row.appendChild(el('div',{className:'ex-badge'},isC?String(j+1):['A1','A2'][j]||String(j+1)));
+      const body=el('div',{className:'ex-body'});body.appendChild(el('p',{className:'ex-name'},ex.name));
+      const chips=el('div',{className:'ex-chips'});chips.appendChild(el('span',{},ex.reps));if(ex.weight_guidance)chips.appendChild(el('span',{},ex.weight_guidance));body.appendChild(chips);
+      if(ex.cue)body.appendChild(el('div',{className:'ex-cue'},ex.cue));row.appendChild(body);
+      const img=findImg(ex.name);if(img){const t=el('img',{src:img,className:'ex-thumb',alt:ex.name,onClick:()=>{S.lightbox=img;render();}});row.appendChild(t);}
+      card.appendChild(row);
+    });
+    card.appendChild(el('div',{className:'rest-footer'},isC?`No rest between exercises  ·  Rest ${g.rest_after_group} between rounds`:`${g.rest_between_exercises} between exercises  ·  Rest ${g.rest_after_group} after superset`));
+  }else{
+    hdr.appendChild(el('span',{className:'g-hdr-meta'},`Rest ${g.rest_between_sets} between sets`));card.appendChild(hdr);
+    const body=el('div',{style:{padding:'12px 14px'}});
+    const img=findImg(g.group_label);if(img){const i=el('img',{src:img,alt:g.group_label,style:{width:'100%',maxHeight:'200px',objectFit:'cover',borderRadius:'var(--rsm)',marginBottom:'12px',cursor:'pointer'},onClick:()=>{S.lightbox=img;render();}});body.appendChild(i);}
+    const tbl=el('div',{className:'set-table'});(g.sets||[]).forEach(s=>{const c=el('div',{className:'set-cell'});c.appendChild(el('div',{className:'set-cell-lbl'},`Set ${s.set_num}`));c.appendChild(el('div',{className:'set-cell-rep'},s.reps));c.appendChild(el('div',{className:'set-cell-wt'},s.weight));tbl.appendChild(c);});body.appendChild(tbl);
+    if(g.cue)body.appendChild(el('div',{className:'ex-cue',style:{marginTop:'12px'}},g.cue));card.appendChild(body);
+  }
+  return card;
+}
+function renderLib(){
+  const w=el('div',{});const entries=Object.entries(S.lib);
+  const usedBytes=new Blob([JSON.stringify(S.lib||{})]).size;const usedPct=Math.min(100,(usedBytes/(8*1024*1024))*100);
+  const dz=el('div',{className:'drop-zone'+(S._drag?' over':''),onDragover:e=>{e.preventDefault();S._drag=true;render();},onDragleave:()=>{S._drag=false;render();},onDrop:e=>{e.preventDefault();S._drag=false;handleFiles(e.dataTransfer.files);}});
+  const fi=el('input',{type:'file',accept:'image/*',multiple:true,onChange:e=>handleFiles(e.target.files)});dz.appendChild(fi);
+  if(S.uploading){dz.appendChild(el('p',{style:{fontWeight:600,fontSize:'15px'}},`Processing ${S.uploadDone} of ${S.uploadTotal}…`));}
+  else{dz.appendChild(el('p',{className:'dz-title'},'Tap to upload images'));dz.appendChild(el('p',{className:'dz-sub'},'Select all at once · filename = exercise name'));}
+  w.appendChild(dz);
+  if(S.uploading){const pb=el('div',{className:'prog-box'});const pm=el('div',{className:'prog-meta'});pm.appendChild(el('span',{},`${S.uploadDone} saved`));pm.appendChild(el('span',{},`${S.uploadTotal-S.uploadDone} remaining`));pb.appendChild(pm);const pt=el('div',{className:'prog-track'});const pf=el('div',{className:'prog-fill',style:{width:S.uploadTotal?`${(S.uploadDone/S.uploadTotal)*100}%`:'0%'}});pt.appendChild(pf);pb.appendChild(pt);w.appendChild(pb);}
+  if(S.uploadMsg)w.appendChild(el('p',{style:{fontSize:'14px',color:'var(--t2)',marginTop:'10px'}},S.uploadMsg));
+  const sr=el('div',{className:'stor-row'});sr.appendChild(el('span',{},`${entries.length} exercises`));sr.appendChild(el('span',{},`${(usedBytes/1024).toFixed(0)} KB used`));w.appendChild(sr);
+  const st=el('div',{className:'stor-track'});st.appendChild(el('div',{className:'stor-fill',style:{width:`${usedPct}%`}}));w.appendChild(st);
+  if(!entries.length&&!S.uploading){w.appendChild(el('p',{style:{fontSize:'14px',color:'var(--t3)',textAlign:'center',marginTop:'2rem'}},'No images yet — tap above to upload'));return w;}
+  if(entries.length){
+    const si=el('input',{className:'search-inp',placeholder:'Search exercises…',value:S.libSearch||'',onInput:e=>{S.libSearch=e.target.value;render();},style:{marginTop:'16px'}});w.appendChild(si);
+    const catsInLib=[...new Set(entries.map(([k])=>getCat(k)))].filter(c=>c!=='Other').sort();
+    if(catsInLib.length){const cf=el('div',{className:'cat-filter'});const ab=el('button',{className:'cat-tag'+(!S.libCat?' on':''),onClick:()=>{S.libCat=null;render();}},'All');cf.appendChild(ab);catsInLib.forEach(c=>{const cnt=entries.filter(([k])=>getCat(k)===c).length;const b=el('button',{className:'cat-tag'+(S.libCat===c?' on':''),onClick:()=>{S.libCat=S.libCat===c?null:c;render();}},`${c} (${cnt})`);cf.appendChild(b);});w.appendChild(cf);}
+    const filtered=entries.filter(([k])=>{const ms=!S.libSearch||k.toLowerCase().includes(S.libSearch.toLowerCase());const mc=!S.libCat||getCat(k)===S.libCat;return ms&&mc;}).sort((a,b)=>a[0].localeCompare(b[0]));
+    const grid=el('div',{className:'lib-grid'});
+    filtered.forEach(([key,val])=>{
+      const card=el('div',{className:'lib-card'});
+      const img=el('img',{src:val.dataUrl,alt:key,onClick:()=>{S.lightbox=val.dataUrl;render();}});card.appendChild(img);
+      const cat=getCat(key);if(cat!=='Other')card.appendChild(el('div',{className:'lib-cat-badge'},cat));
+      const bd=el('div',{className:'lib-card-body'});
+      const inp=el('input',{className:'lib-card-input',value:key,placeholder:'Exercise name',onChange:e=>{const nv=e.target.value.trim();if(!nv||nv===key)return;S.lib[nv]={...S.lib[key],name:nv};delete S.lib[key];saveLib();render();}});
+      bd.appendChild(inp);card.appendChild(bd);
+      const del=el('button',{className:'lib-card-del',onClick:()=>{if(!confirm(`Remove "${key}"?`))return;delete S.lib[key];saveLib();render();}},'×');card.appendChild(del);
+      grid.appendChild(card);
+    });
+    w.appendChild(grid);
+    const cb=el('button',{className:'btn btn-ghost',style:{fontSize:'13px',marginTop:'1rem',float:'right'},onClick:()=>{if(!confirm('Delete all exercise images?'))return;S.lib={};localStorage.removeItem(LS_LIB);S.uploadMsg='';render();}},'Clear all');w.appendChild(cb);
+  }
+  return w;
+}
+async function handleFiles(files){
+  const arr=Array.from(files).filter(f=>f.type.startsWith('image/'));
+  if(!arr.length){S.uploadMsg='No image files found.';render();return;}
+  S.uploading=true;S.uploadDone=0;S.uploadTotal=arr.length;S.uploadMsg='';render();
+  let done=0,failed=0;
+  for(let i=0;i<arr.length;i++){
+    try{const d=await compress(arr[i]);if(d){const n=arr[i].name.replace(/\.[^.]+$/,'').replace(/[-_]+/g,' ').trim();S.lib[n]={dataUrl:d,name:n};done++;}else failed++;}catch(e){failed++;}
+    S.uploadDone=done;
+    if((i+1)%BATCH===0||(i+1)===arr.length){const ok=saveLib();if(!ok){S.uploadMsg=`Storage full after ${done} images.`;S.uploading=false;render();return;}render();}
+  }
+  S.uploadMsg=failed>0?`Done — ${done} saved, ${failed} skipped.`:`All ${done} images saved ✓`;S.uploading=false;render();
+}
+render();
+</script>
+</body>
+</html>
