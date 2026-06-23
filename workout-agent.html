@@ -226,7 +226,8 @@ function WorkoutTab({lib}){
   const[time,setTime]=useState('45 min');
   const[style,setStyle]=useState('circuit');
   const[eq,setEq]=useState(['Body Weight']);
-  const[loading,setLoading]=useState(false);
+ const[goal,setGoal]=useState('recomp'); 
+ const[loading,setLoading]=useState(false);
   const[workout,setWorkout]=useState(null);
   const[error,setError]=useState(null);
   const[visible,setVisible]=useState([]);
@@ -244,7 +245,7 @@ function WorkoutTab({lib}){
     const exList=filtered.length>0?`EXERCISE LIBRARY — use ONLY these exact names:\n${filtered.join(', ')}`:hasLib?`No exercises match selected equipment. Use expert knowledge for: ${eq.join(', ')}.`:`No library. Use expert knowledge.`;
     try{
       const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-        body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1200,system:'Expert strength coach. Return ONLY raw valid JSON. No markdown, no preamble.',messages:[{role:'user',content:`Generate a ${time} strength workout.\nFocus: ${muscle.replace('_',' ')}\nEquipment: ${eq.join(', ')}\nStyle: ${style}\n\n${exList}\n\nRULES: Use EXACT names. Fast-paced, cardio through pace not running.\n\nGroups schema: ${STYLE_SCHEMAS[style]}\n\nJSON: {"workout_name":string,"warmup":[{"name":string,"duration":string}],"groups":[...],"cooldown":[{"name":string,"duration":string}]}`}]})
+        body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1200,system:'Expert strength coach. Return ONLY raw valid JSON. No markdown, no preamble.',messages:[{role:'user',content:`Generate a ${time} strength workout.\nFocus: ${muscle.replace('_',' ')}\nEquipment: ${eq.join(', ')}\nStyle: ${style}\n\n${exList}\n\nRULES: Use EXACT names. Fast-paced, cardio through pace not running.\n\nGOAL GUIDANCE: ${goal==='lose_fat'?'Fat loss — high reps (15-20), short rest (30-45s), max heart rate elevation, volume over load.':goal==='gain_muscle'?'Muscle gain — moderate reps (8-12), rest 60-90s between sets, heavier loads, prioritize compound lifts and progressive overload.':'Recomposition — balance hypertrophy (10-15 reps) with metabolic work, moderate rest (45-60s), mix compound and isolation.'}\n\nGroups schema: ${STYLE_SCHEMAS[style]}\n\nJSON: {"workout_name":string,"warmup":[{"name":string,"duration":string}],"groups":[...],"cooldown":[{"name":string,"duration":string}]}`}]})
       });
       const data=await res.json();
       if(data.error)throw new Error(data.error.message);
@@ -286,7 +287,8 @@ function WorkoutTab({lib}){
   return h('div',null,
     lightbox&&h(Lightbox,{src:lightbox,onClose:()=>setLightbox(null)}),
     !libEntries.length&&h('div',{className:'notice'},'→ Upload exercise images in the Image Library tab first.'),
-    h('div',{className:'field'},h('span',{className:'field-label'},'Focus'),h('div',{className:'pill-group'},MUSCLES.map(m=>h('button',{key:m.id,className:`pill${muscle===m.id?' active':''}`,onClick:()=>setMuscle(m.id)},m.label)))),
+    h('div',{className:'field'},h('span',{className:'field-label'},'Goal'),h('div',{className:'seg'},h('button',{className:`seg-btn${goal==='lose_fat'?' active':''}`,onClick:()=>setGoal('lose_fat')},'Lose fat'),h('button',{className:`seg-btn${goal==='recomp'?' active':''}`,onClick:()=>setGoal('recomp')},'Lose fat + build'),h('button',{className:`seg-btn${goal==='gain_muscle'?' active':''}`,onClick:()=>setGoal('gain_muscle')},'Gain muscle'))),
+           h('div',{className:'field'},h('span',{className:'field-label'},'Focus'),h('div',{className:'pill-group'},MUSCLES.map(m=>h('button',{key:m.id,className:`pill${muscle===m.id?' active':''}`,onClick:()=>setMuscle(m.id)},m.label)))),
     h('div',{className:'field'},h('span',{className:'field-label'},'Time'),h('div',{className:'seg'},TIMES.map(t=>h('button',{key:t,className:`seg-btn${time===t?' active':''}`,onClick:()=>setTime(t)},t)))),
     h('div',{className:'field'},h('span',{className:'field-label'},'Training style'),h('div',{className:'style-grid'},STYLES.map(s=>h('div',{key:s.id,className:`style-card${style===s.id?' active':''}`,onClick:()=>setStyle(s.id)},h('p',{className:'style-card-title'},s.label),h('p',{className:'style-card-desc'},s.desc))))),
     h('div',{className:'field'},
@@ -310,7 +312,7 @@ function WorkoutTab({lib}){
 function App(){
   const[apiKey,setApiKey]=useState(()=>localStorage.getItem(LS_KEY)||'');
   const[showSettings,setShowSettings]=useState(false);
-  const[tab,setTab]=useState('library');
+  const[tab,setTab]=useState('workout');
   const[lib,setLib]=useState(()=>loadLib());
   if(!apiKey){
     return h('div',null,h('div',{className:'setup'},
