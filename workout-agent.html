@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Workout">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <title>Workout Agent</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -177,7 +177,8 @@ async function saveWorkoutHistory(workoutId) {
     const allExercises = (S.workout.groups || []).flatMap(g =>
       g.exercises ? g.exercises.map(e => e.name) : [g.group_label]
     );
-    await _supa.from('workout_history').insert({
+    console.log('[Supabase] saving workout history...', { workoutId, focus, exercises: allExercises.length });
+    const { data, error } = await _supa.from('workout_history').insert({
       id: workoutId,
       focus: focus,
       style: S.style,
@@ -186,7 +187,9 @@ async function saveWorkoutHistory(workoutId) {
       exercises: allExercises,
       workout_name: S.workout.workout_name
     });
-  } catch(e) { console.warn('History save failed:', e); }
+    if(error) console.error('[Supabase] insert error:', error);
+    else console.log('[Supabase] workout history saved ✓');
+  } catch(e) { console.warn('[Supabase] History save failed:', e); }
 }
 
 async function logSwap(originalExercise, swappedFor) {
