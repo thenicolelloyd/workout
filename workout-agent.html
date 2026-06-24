@@ -2,796 +2,972 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Workout">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Workout Agent</title>
 <style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-:root{--bg:#161618;--s1:#252527;--s2:#2e2e30;--b1:#333335;--b2:#3e3e40;--t1:#f5f5f5;--t2:#999;--t3:#666;--acc:#aec153;--acc-dk:#1a2008;--red:#e05252;--radius:14px;--rsm:10px}
-html,body{height:100%;background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif;font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
-#app{max-width:600px;margin:0 auto;padding:1rem 1.25rem 6rem;min-height:100vh}
-.hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:2rem;padding-top:env(safe-area-inset-top,0px)}
-.hdr-left{display:flex;align-items:center;gap:8px}
-.icon-btn{background:none;border:none;cursor:pointer;color:var(--t3);padding:8px;border-radius:var(--rsm);font-size:20px;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center}
-.back-btn{background:none;border:none;cursor:pointer;color:var(--t1);font-size:15px;font-weight:600;padding:8px 0;min-height:44px;display:flex;align-items:center;gap:6px}
-.page-title{font-size:clamp(36px,10vw,48px);font-weight:900;line-height:1.0;text-transform:uppercase;letter-spacing:-0.02em;margin-bottom:1.25rem;color:var(--t1);white-space:pre-line}
-.setup{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh;text-align:center;gap:1.25rem;padding:1rem}
-.setup h2{font-size:32px;font-weight:900;text-transform:uppercase;letter-spacing:-0.02em}
-.setup p{color:var(--t2);font-size:14px;max-width:340px;line-height:1.6}
-.tabs{display:flex;border-bottom:.5px solid var(--b1);margin-bottom:1.25rem}
-.tab{flex:1;padding:8px 8px;background:none;border:none;font-size:14px;font-weight:500;cursor:pointer;color:var(--t3);border-bottom:2px solid transparent;margin-bottom:-1px}
-.tab.on{color:var(--t1);font-weight:700;border-bottom-color:var(--acc)}
-.field{margin-bottom:1.75rem}
-.flbl{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);margin-bottom:12px;display:block}
-.pills{display:flex;flex-wrap:wrap;gap:8px}
-.pill{padding:10px 16px;border-radius:30px;border:.5px solid var(--b2);background:var(--s1);font-size:14px;font-weight:500;cursor:pointer;color:var(--t2);white-space:nowrap;min-height:40px;display:flex;align-items:center}
-.pill.on{background:var(--acc);border-color:var(--acc);color:var(--acc-dk);font-weight:700}
-.seg{display:flex;background:var(--s1);border-radius:var(--rsm);padding:4px;gap:4px}
-.seg-btn{flex:1;padding:9px 4px;background:transparent;border:none;border-radius:var(--rsm);font-size:13px;font-weight:500;cursor:pointer;color:var(--t2);min-height:42px}
-.seg-btn.on{background:var(--acc);color:var(--acc-dk);font-weight:700}
-.style-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.scard{border:.5px solid var(--b1);border-radius:var(--radius);padding:14px;cursor:pointer;background:var(--s1);min-height:80px;position:relative}
-.scard.on{border:1.5px solid var(--acc);padding:13px}
-.scard-dot{position:absolute;top:14px;right:14px;width:8px;height:8px;border-radius:50%;background:var(--acc);opacity:0}
-.scard.on .scard-dot{opacity:1}
-.scard-title{font-size:14px;font-weight:700;margin-bottom:4px;color:var(--t1)}
-.scard-desc{font-size:12px;color:var(--t2);line-height:1.4}
-input[type=text],input[type=password]{width:100%;padding:13px 14px;background:var(--s1);border:.5px solid var(--b2);border-radius:var(--rsm);color:var(--t1);font-size:16px;outline:none;-webkit-appearance:none}
-input::placeholder{color:var(--t3)}
-.search-inp{width:100%;padding:11px 14px;background:var(--s1);border:.5px solid var(--b1);border-radius:var(--rsm);color:var(--t1);font-size:15px;outline:none;-webkit-appearance:none}
-.btn{padding:13px 20px;border-radius:var(--rsm);border:.5px solid var(--b2);background:var(--s2);color:var(--t1);font-size:15px;font-weight:600;cursor:pointer;min-height:46px}
-.btn-pri{background:var(--t1);color:var(--bg);border-color:var(--t1)}
-.btn-ghost{background:transparent;border-color:transparent;color:var(--t2)}
-.gen-btn{width:100%;padding:18px;border-radius:var(--radius);border:none;background:var(--acc);font-size:15px;font-weight:800;cursor:pointer;color:var(--acc-dk);min-height:58px;text-transform:uppercase;letter-spacing:.05em}
-.gen-btn:disabled{opacity:.4;cursor:default}
-.gen-btn-wrap{position:fixed;bottom:0;left:0;right:0;z-index:100;background:linear-gradient(to top,var(--bg) 70%,transparent);padding:1rem 1.25rem calc(1rem + env(safe-area-inset-bottom,0px));max-width:600px;margin:0 auto}
-.ex-tab-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem}
-.ex-tab-hdr h2{font-size:22px;font-weight:800}
-.ex-list-item{display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:.5px solid var(--b1)}
-.ex-list-item:last-child{border-bottom:none}
-.ex-list-thumb{width:96px;height:96px;border-radius:var(--rsm);overflow:hidden;flex-shrink:0;background:var(--s2);cursor:pointer}
-.ex-list-thumb img{width:100%;height:100%;object-fit:cover;display:block}
-.ex-list-thumb-ph{width:96px;height:96px;border-radius:var(--rsm);background:var(--s2);flex-shrink:0}
-.ex-list-info{flex:1;min-width:0}
-.ex-list-name{font-size:15px;font-weight:600;margin-bottom:4px}
-.ex-cat-badge{display:inline-block;padding:2px 8px;border-radius:6px;background:var(--s2);font-size:11px;font-weight:600;color:var(--t2)}
-.cat-filter{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
-.cat-tag{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;border:.5px solid var(--b1);background:var(--s1);color:var(--t2);min-height:32px;display:flex;align-items:center}
-.cat-tag.on{background:var(--acc);color:var(--acc-dk);border-color:var(--acc);font-weight:700}
-.session-eyebrow{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--acc);margin-bottom:8px}
-.wo-title{font-size:clamp(28px,8vw,38px);font-weight:900;line-height:1.0;text-transform:uppercase;letter-spacing:-0.02em;margin-bottom:14px}
-.wo-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:1.5rem}
-.wo-tag{padding:5px 12px;border-radius:20px;border:.5px solid var(--b2);background:var(--s1);font-size:12px;font-weight:500;color:var(--t2)}
-.sec-lbl{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);margin:1.25rem 0 10px}
-.wu-item{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:.5px solid var(--b1);font-size:15px}
-.wu-item:last-child{border-bottom:none}
-.wu-dur{color:var(--t2);font-size:13px;font-weight:500}
-.group-card{background:var(--s1);border:.5px solid var(--b1);border-radius:var(--radius);overflow:hidden;opacity:0;transform:translateY(8px);transition:opacity .3s,transform .3s;margin-bottom:12px}
-.group-card.show{opacity:1;transform:translateY(0)}
-.g-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--s2)}
-.g-hdr-title{font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
-.g-hdr-meta{font-size:13px;color:var(--t2);font-weight:500}
-.ex-row{display:flex;align-items:flex-start;gap:14px;padding:14px 16px;border-top:.5px solid var(--b1);position:relative}
-.ex-thumb-wrap{width:96px;height:96px;border-radius:var(--rsm);overflow:hidden;flex-shrink:0;background:var(--s2)}
-.ex-thumb-wrap img{width:100%;height:100%;object-fit:cover;cursor:pointer;display:block}
-.ex-body{flex:1;min-width:0;padding-right:32px}
-.ex-name{font-size:15px;font-weight:700;margin-bottom:3px}
-.ex-reps{font-size:13px;font-weight:600;color:var(--acc);margin-bottom:2px}
-.ex-cue{font-size:13px;color:var(--t2);line-height:1.5;margin-top:4px}
-.ex-muscles{font-size:11px;color:var(--t3);margin-top:2px;letter-spacing:.02em}
-.kabob-btn{position:absolute;top:10px;right:10px;background:none;border:none;cursor:pointer;color:var(--t3);font-size:20px;min-width:36px;min-height:36px;display:flex;align-items:center;justify-content:center;border-radius:var(--rsm);padding:4px;line-height:1}
-.rest-footer{padding:12px 16px;font-size:13px;color:var(--t3)}
-.set-table{display:flex;overflow:hidden;border-radius:var(--rsm);border:.5px solid var(--b1);margin-top:12px}
-.set-cell{flex:1;text-align:center;padding:10px 4px;background:var(--s2);border-right:.5px solid var(--b1)}
-.set-cell:last-child{border-right:none}
-.set-cell-lbl{font-size:10px;color:var(--t3);margin-bottom:3px;text-transform:uppercase;letter-spacing:.05em}
-.set-cell-rep{font-size:14px;font-weight:700;color:var(--acc)}
-.set-cell-wt{font-size:10px;color:var(--t3);margin-top:3px}
-.lightbox{position:fixed;inset:0;background:rgba(0,0,0,.95);display:flex;align-items:center;justify-content:center;z-index:9999;cursor:pointer}
-.lightbox img{max-width:95vw;max-height:90vh;border-radius:var(--radius);object-fit:contain}
-.sheet-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:500;display:flex;align-items:flex-end;justify-content:center}
-.sheet{background:var(--s1);border-radius:var(--radius) var(--radius) 0 0;width:100%;max-width:600px;padding-bottom:calc(1rem + env(safe-area-inset-bottom,0px));overflow:hidden}
-.sheet-title{font-size:13px;font-weight:600;color:var(--t2);padding:16px 20px 12px;border-bottom:.5px solid var(--b1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sheet-action{display:flex;align-items:center;gap:14px;padding:16px 20px;font-size:16px;font-weight:500;cursor:pointer;border:none;background:none;color:var(--t1);width:100%;text-align:left;border-bottom:.5px solid var(--b1)}
-.sheet-action.disabled{color:var(--t3);cursor:default}
-.sheet-action-icon{font-size:18px;width:24px;text-align:center}
-.sheet-cancel{display:block;width:100%;padding:16px;font-size:16px;font-weight:600;cursor:pointer;border:none;background:var(--s2);color:var(--acc);margin-top:8px;text-align:center}
-.swap-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:600;display:flex;align-items:flex-end;justify-content:center}
-.swap-sheet{background:var(--s1);border-radius:var(--radius) var(--radius) 0 0;width:100%;max-width:600px;max-height:80vh;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom,0px)}
-.swap-hdr{padding:16px 20px;border-bottom:.5px solid var(--b1);flex-shrink:0}
-.swap-hdr h3{font-size:16px;font-weight:800;text-transform:uppercase}
-.swap-hdr p{font-size:13px;color:var(--t2);margin-top:2px}
-.swap-list{overflow-y:auto;flex:1}
-.swap-item{display:flex;align-items:center;gap:12px;padding:12px 20px;border-bottom:.5px solid var(--b1);cursor:pointer}
-.swap-item:active{background:var(--s2)}
-.swap-thumb{width:56px;height:56px;border-radius:var(--rsm);object-fit:cover;background:var(--s2);flex-shrink:0;display:block}
-.swap-thumb-ph{width:56px;height:56px;border-radius:var(--rsm);background:var(--s2);flex-shrink:0}
-.swap-name{font-size:14px;font-weight:600}
-.swap-cat{font-size:12px;color:var(--t2);margin-top:2px}
-.swap-cancel{padding:16px;font-size:15px;font-weight:600;cursor:pointer;border:none;background:var(--s2);color:var(--acc);width:100%;text-align:center;flex-shrink:0}
-.notice{background:var(--s1);border:.5px solid var(--b2);border-radius:var(--rsm);padding:13px 14px;font-size:14px;color:var(--t2);margin-bottom:1.25rem;display:flex;align-items:center;justify-content:space-between;gap:12px}
-.err{background:rgba(224,82,82,.08);border:.5px solid rgba(224,82,82,.3);border-radius:var(--rsm);padding:13px 14px;font-size:14px;color:var(--red);margin-top:1rem}
-.hint{font-size:12px;color:var(--t3);margin-top:6px;line-height:1.5}
-.eq-count{font-size:12px;color:var(--t3);margin-top:7px}
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);display:flex;align-items:flex-end;justify-content:center;z-index:1000}
-.modal{background:var(--s1);border:.5px solid var(--b2);border-radius:var(--radius) var(--radius) 0 0;padding:1.5rem 1.5rem calc(1.5rem + env(safe-area-inset-bottom,0px));width:100%}
-.modal h3{font-size:18px;font-weight:800;text-transform:uppercase;letter-spacing:-.01em;margin-bottom:1.25rem}
-.modal-btns{display:flex;gap:8px;justify-content:flex-end;margin-top:1rem}
-.empty-state{text-align:center;padding:3rem 1rem;color:var(--t3);font-size:14px}
-.loading-state{text-align:center;padding:3rem 1rem;color:var(--t2);font-size:14px}
-.save-btn{display:block;width:100%;margin-top:2rem;padding:16px;border-radius:var(--radius);border:.5px solid var(--b2);background:var(--s1);color:var(--t1);font-size:15px;font-weight:600;cursor:pointer;text-align:center}
-.save-btn.saved{color:var(--acc);border-color:var(--acc);background:rgba(174,193,83,.08);cursor:default}
-.saved-card{background:var(--s1);border:.5px solid var(--b1);border-radius:var(--radius);padding:16px;margin-bottom:12px;position:relative;transition:border-color .15s}
-.saved-card-tap{cursor:pointer}
-.saved-card-tap:active{border-color:var(--b2)}
-.saved-card-name{font-size:16px;font-weight:700;margin-bottom:8px;padding-right:36px}
-.saved-card-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
-.saved-card-tag{padding:3px 10px;border-radius:20px;border:.5px solid var(--b1);font-size:11px;font-weight:500;color:var(--t2)}
-.saved-card-date{font-size:11px;color:var(--t3);margin-bottom:10px}
-.saved-card-notes{width:100%;background:var(--s2);border:.5px solid var(--b1);border-radius:var(--rsm);color:var(--t1);font-size:13px;padding:10px 12px;outline:none;resize:none;font-family:inherit;line-height:1.5;min-height:38px;margin-top:4px}
-.saved-card-notes::placeholder{color:var(--t3)}
-.saved-card-notes:focus{border-color:var(--b2)}
-.saved-card-del{position:absolute;top:12px;right:12px;background:none;border:none;color:var(--red);font-size:13px;font-weight:600;cursor:pointer;padding:6px;opacity:.7}
-.saved-card-del:active{opacity:1}
-.saved-card-del.pending{opacity:1;font-weight:700;}
-.delete-btn{width:100%;padding:14px;border-radius:var(--rsm);border:.5px solid rgba(224,82,82,.3);background:rgba(224,82,82,.06);color:var(--red);font-size:14px;font-weight:600;cursor:pointer;margin-top:1.5rem;text-align:center}
-.delete-btn.pending{background:rgba(224,82,82,.15);border-color:rgba(224,82,82,.5);}
-@keyframes btnPulse{0%,100%{opacity:1}50%{opacity:.6}}
-.gen-btn.pulsing{animation:btnPulse 3s ease-in-out infinite}
-.ex-row.flash{animation:exFlash 1.6s ease-out forwards}
-.group-card.flash{animation:groupFlash 1.6s ease-out forwards}
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0a0a0a;
+    --surface: #141414;
+    --surface2: #1e1e1e;
+    --border: #2a2a2a;
+    --border2: #333;
+    --text: #f0ebe4;
+    --text2: #888;
+    --text3: #555;
+    --accent: #c8a97e;
+    --danger: #e05252;
+    --warn: #e09332;
+    --radius: 10px;
+    --radius-sm: 6px;
+    --radius-pill: 20px;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  #app {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 2rem 1.25rem 4rem;
+  }
+
+  /* ── Header ── */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+  }
+  .header h1 {
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text2);
+  }
+  .icon-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text2);
+    padding: 4px;
+    border-radius: var(--radius-sm);
+    transition: color 0.15s;
+    font-size: 18px;
+    line-height: 1;
+  }
+  .icon-btn:hover { color: var(--text); }
+
+  /* ── Setup screen ── */
+  .setup {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    text-align: center;
+    gap: 1rem;
+  }
+  .setup h2 { font-size: 20px; font-weight: 500; }
+  .setup p { color: var(--text2); font-size: 13px; max-width: 380px; line-height: 1.6; }
+  .setup a { color: var(--accent); }
+
+  /* ── Modal ── */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.75);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 1000; padding: 1rem;
+  }
+  .modal {
+    background: var(--surface);
+    border: 0.5px solid var(--border2);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    width: 100%; max-width: 420px;
+  }
+  .modal h3 { font-size: 15px; font-weight: 500; margin-bottom: 1rem; }
+
+  /* ── Tabs ── */
+  .tabs {
+    display: flex;
+    border-bottom: 0.5px solid var(--border);
+    margin-bottom: 1.5rem;
+  }
+  .tab-btn {
+    padding: 8px 18px;
+    background: none; border: none;
+    font-size: 14px; cursor: pointer;
+    color: var(--text2);
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: all 0.15s;
+  }
+  .tab-btn.active { color: var(--text); font-weight: 500; border-bottom-color: var(--text); }
+
+  /* ── Form elements ── */
+  .field { margin-bottom: 1.25rem; }
+  .field-label {
+    font-size: 11px; font-weight: 500;
+    letter-spacing: 0.05em; text-transform: uppercase;
+    color: var(--text2); margin-bottom: 8px;
+    display: block;
+  }
+
+  .pill-group { display: flex; flex-wrap: wrap; gap: 7px; }
+  .pill {
+    padding: 5px 13px;
+    border-radius: var(--radius-pill);
+    border: 0.5px solid var(--border2);
+    background: var(--surface);
+    font-size: 12px; cursor: pointer;
+    color: var(--text2);
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .pill.active {
+    background: var(--surface2);
+    border-color: var(--border2);
+    color: var(--text);
+    font-weight: 500;
+    border-color: #555;
+  }
+  .pill:hover:not(.active) { background: var(--surface2); }
+  .pill.always-on { opacity: 0.6; cursor: default; }
+
+  .seg { display: flex; border: 0.5px solid var(--border2); border-radius: var(--radius-sm); overflow: hidden; }
+  .seg-btn {
+    flex: 1; padding: 7px 4px;
+    background: transparent; border: none;
+    font-size: 13px; cursor: pointer;
+    color: var(--text2); transition: all 0.15s;
+  }
+  .seg-btn.active { background: var(--surface2); color: var(--text); font-weight: 500; }
+
+  .style-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .style-card {
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+    background: var(--surface);
+  }
+  .style-card.active { border-color: #555; background: var(--surface2); }
+  .style-card:hover:not(.active) { background: var(--surface2); }
+  .style-card-title { font-size: 13px; font-weight: 500; margin-bottom: 2px; }
+  .style-card-desc { font-size: 11px; color: var(--text2); }
+
+  input[type="text"], input[type="password"] {
+    width: 100%; padding: 9px 12px;
+    background: var(--surface2);
+    border: 0.5px solid var(--border2);
+    border-radius: var(--radius-sm);
+    color: var(--text); font-size: 14px;
+    outline: none; transition: border-color 0.15s;
+  }
+  input[type="text"]:focus, input[type="password"]:focus { border-color: #555; }
+  input::placeholder { color: var(--text3); }
+
+  .search-input {
+    width: 100%; padding: 7px 10px;
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text); font-size: 13px;
+    outline: none; margin-bottom: 4px;
+  }
+  .search-input:focus { border-color: var(--border2); }
+
+  .btn {
+    padding: 9px 18px;
+    border-radius: var(--radius-sm);
+    border: 0.5px solid var(--border2);
+    background: var(--surface2);
+    color: var(--text); font-size: 14px; font-weight: 500;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .btn:hover { background: #2a2a2a; }
+  .btn-primary {
+    background: var(--text);
+    color: var(--bg);
+    border-color: var(--text);
+  }
+  .btn-primary:hover { opacity: 0.9; }
+  .btn-danger { border-color: var(--danger); color: var(--danger); background: transparent; }
+  .btn-danger:hover { background: rgba(224,82,82,0.1); }
+  .btn-ghost { background: transparent; border-color: transparent; color: var(--text2); }
+  .btn-ghost:hover { color: var(--text); }
+  .btn:disabled { opacity: 0.45; cursor: default; }
+
+  .gen-btn {
+    width: 100%; padding: 13px;
+    border-radius: var(--radius);
+    border: 0.5px solid var(--border2);
+    background: var(--surface);
+    font-size: 15px; font-weight: 500;
+    cursor: pointer; color: var(--text);
+    transition: all 0.15s; margin-top: 1.5rem;
+  }
+  .gen-btn:hover:not(:disabled) { background: var(--surface2); }
+  .gen-btn:disabled { opacity: 0.45; cursor: default; }
+
+  /* ── Upload zone ── */
+  .drop-zone {
+    position: relative;
+    border: 1.5px dashed var(--border2);
+    border-radius: var(--radius);
+    padding: 2.5rem 1.5rem;
+    text-align: center;
+    transition: all 0.15s;
+    background: var(--surface);
+    cursor: pointer;
+  }
+  .drop-zone:hover, .drop-zone.drag-over {
+    border-color: #666;
+    background: var(--surface2);
+  }
+  .drop-zone input[type="file"] {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    opacity: 0; cursor: pointer;
+  }
+  .drop-zone-title { font-size: 15px; font-weight: 500; margin-bottom: 6px; }
+  .drop-zone-sub { font-size: 12px; color: var(--text2); }
+
+  /* ── Progress ── */
+  .progress-box {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px; margin-top: 12px;
+  }
+  .progress-meta {
+    display: flex; justify-content: space-between;
+    font-size: 12px; color: var(--text2); margin-bottom: 8px;
+  }
+  .progress-track {
+    height: 5px; background: var(--border2);
+    border-radius: 3px; overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%; background: var(--accent);
+    border-radius: 3px; transition: width 0.15s;
+  }
+
+  /* ── Storage meter ── */
+  .storage-row {
+    display: flex; justify-content: space-between;
+    font-size: 11px; color: var(--text3); margin-top: 10px;
+  }
+  .storage-track {
+    height: 3px; background: var(--border);
+    border-radius: 2px; overflow: hidden; margin-top: 5px;
+  }
+  .storage-fill { height: 100%; background: var(--text3); border-radius: 2px; transition: width 0.3s; }
+  .storage-fill.warn { background: var(--warn); }
+  .storage-fill.full { background: var(--danger); }
+
+  /* ── Cat filter ── */
+  .cat-filter { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+  .cat-tag {
+    padding: 3px 10px; border-radius: 12px;
+    font-size: 11px; cursor: pointer;
+    border: 0.5px solid var(--border);
+    background: var(--surface); color: var(--text2);
+    transition: all 0.15s;
+  }
+  .cat-tag.active { background: var(--surface2); color: var(--text); border-color: #555; }
+
+  /* ── Image grid ── */
+  .lib-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 10px; margin-top: 12px;
+  }
+  .lib-card {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    overflow: hidden; position: relative;
+  }
+  .lib-card-img {
+    width: 100%; height: 90px;
+    object-fit: cover; display: block; cursor: pointer;
+  }
+  .lib-card-body { padding: 6px 8px; }
+  .lib-card-input {
+    width: 100%; background: transparent;
+    border: none; border-bottom: 0.5px solid var(--border);
+    font-size: 10px; color: var(--text);
+    padding: 2px 0; outline: none;
+  }
+  .lib-card-input::placeholder { color: var(--text3); }
+  .lib-card-del {
+    position: absolute; top: 5px; right: 5px;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: rgba(0,0,0,0.65); border: none;
+    color: #fff; font-size: 13px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    line-height: 1;
+  }
+  .lib-cat-badge {
+    position: absolute; top: 5px; left: 5px;
+    padding: 2px 6px; border-radius: 8px;
+    background: rgba(0,0,0,0.65);
+    font-size: 9px; color: #fff; font-weight: 500;
+  }
+
+  /* ── Workout output ── */
+  .divider { border: none; border-top: 0.5px solid var(--border); margin: 1.5rem 0; }
+  .workout-title { font-size: 18px; font-weight: 500; margin-bottom: 4px; }
+  .section-label {
+    font-size: 10px; font-weight: 500; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--text3);
+    margin: 1.25rem 0 8px;
+  }
+  .warmup-item { font-size: 13px; color: var(--text2); padding: 3px 0; }
+
+  .group-card {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    opacity: 0; transform: translateY(8px);
+    transition: opacity 0.3s, transform 0.3s;
+  }
+  .group-card.visible { opacity: 1; transform: translateY(0); }
+  .group-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 14px;
+    background: var(--surface2);
+    border-bottom: 0.5px solid var(--border);
+  }
+  .group-header-title { font-size: 13px; font-weight: 500; }
+  .group-header-meta { font-size: 12px; color: var(--text2); }
+
+  .ex-row {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 10px 14px;
+    border-bottom: 0.5px solid var(--border);
+  }
+  .ex-row:last-of-type { border-bottom: none; }
+  .ex-badge {
+    min-width: 22px; height: 22px; border-radius: 50%;
+    border: 0.5px solid var(--border2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 500; color: var(--text2);
+    flex-shrink: 0; margin-top: 1px;
+  }
+  .ex-body { flex: 1; min-width: 0; }
+  .ex-name { font-size: 14px; font-weight: 500; margin-bottom: 3px; }
+  .ex-chips { display: flex; flex-wrap: wrap; gap: 10px; font-size: 12px; color: var(--text2); }
+  .ex-cue {
+    font-size: 12px; color: var(--text2); font-style: italic;
+    margin-top: 5px; border-left: 2px solid var(--border2); padding-left: 8px;
+  }
+  .ex-thumb {
+    width: 58px; height: 58px; border-radius: var(--radius-sm);
+    object-fit: cover; border: 0.5px solid var(--border);
+    flex-shrink: 0; cursor: pointer;
+  }
+  .rest-footer { padding: 8px 14px; font-size: 12px; color: var(--text3); }
+
+  .set-table {
+    display: flex; border-radius: var(--radius-sm);
+    overflow: hidden; border: 0.5px solid var(--border);
+    margin-top: 10px;
+  }
+  .set-cell {
+    flex: 1; text-align: center; padding: 7px 4px;
+    background: var(--surface2);
+    border-right: 0.5px solid var(--border);
+  }
+  .set-cell:last-child { border-right: none; }
+  .set-cell-label { font-size: 10px; color: var(--text3); margin-bottom: 2px; }
+  .set-cell-reps { font-size: 13px; font-weight: 500; }
+  .set-cell-wt { font-size: 10px; color: var(--text3); margin-top: 2px; }
+
+  /* ── Lightbox ── */
+  .lightbox {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.92);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 9999; cursor: pointer;
+  }
+  .lightbox img {
+    max-width: 90vw; max-height: 90vh;
+    border-radius: var(--radius); object-fit: contain;
+  }
+
+  /* ── Notices ── */
+  .notice {
+    background: var(--surface);
+    border: 0.5px solid var(--border2);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px; font-size: 13px;
+    color: var(--text2); cursor: pointer;
+    margin-bottom: 1.25rem;
+  }
+  .error-box {
+    background: rgba(224,82,82,0.08);
+    border: 0.5px solid rgba(224,82,82,0.3);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px; font-size: 13px;
+    color: var(--danger); margin-top: 1rem;
+  }
+  .hint { font-size: 11px; color: var(--text3); margin-top: 5px; }
+
+  .groups-list { display: flex; flex-direction: column; gap: 10px; }
+  .eq-count { font-size: 11px; color: var(--text3); margin-top: 5px; }
 </style>
 </head>
 <body>
 <div id="app"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script>
-const SUPABASE_URL='https://aohiqwpuikueisshddos.supabase.co';
-const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFvaGlxd3B1aWt1ZWlzc2hkZG9zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3NzkxMDIsImV4cCI6MjA2NjM1NTEwMn0.YkLNMHyIi9QLNEbIYEDrPJiGNj0oOLBHgFJGqYlHwdY';
-const LS_SAVED='wo_saved_v1';
-const EXERCISES_URL='https://raw.githubusercontent.com/thenicolelloyd/workout/main/exercises.json';
-const IMAGES_BASE='https://raw.githubusercontent.com/thenicolelloyd/workout/main/exercise-images/';
+const { useState, useEffect, useRef } = React;
+const h = React.createElement;
 
-// Supabase client
-const _supa = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// ── Constants ──
+const LS_LIB = 'workout_image_library_v1';
+const LS_KEY = 'workout_api_key';
+const MAX_STORAGE = 8 * 1024 * 1024; // 8MB — real localStorage is 5-10MB
+const BATCH = 10;
 
-// ── Supabase helpers ──────────────────────────────────────────────────────────
-
-async function fetchRecentHistory(focus) {
-  try {
-    const { data, error } = await _supa
-      .from('workout_history')
-      .select('exercises, created_at')
-      .eq('focus', focus)
-      .order('created_at', { ascending: false })
-      .limit(3);
-    if (error) return [];
-    return data || [];
-  } catch(e) { return []; }
+const CATEGORIES = ['Body Weight','EZ Bar','Barbell','Dumbbell','Kettlebell','Machine','Cable','Band','Plate'];
+const CAT_DISPLAY = ['Band','Barbell','Body Weight','Cable','Dumbbell','EZ Bar','Kettlebell','Machine','Plate'];
+function getCat(name) {
+  for (const c of CATEGORIES) {
+    if (name.trim().toLowerCase().startsWith(c.toLowerCase())) return c;
+  }
+  return 'Other';
 }
 
-async function saveWorkoutHistory(workoutId) {
-  try {
-    const focus = S.muscles.includes('full_body') ? 'full_body' : S.muscles.join('_');
-    const allExercises = (S.workout.groups || []).flatMap(g =>
-      g.exercises ? g.exercises.map(e => e.name) : [g.group_label]
-    );
-    await _supa.from('workout_history').insert({
-      id: workoutId,
-      focus: focus,
-      style: S.style,
-      duration: S.time,
-      equipment: S.eq,
-      exercises: allExercises,
-      workout_name: S.workout.workout_name
-    });
-  } catch(e) { console.warn('History save failed:', e); }
-}
-
-async function logSwap(originalExercise, swappedFor) {
-  try {
-    const workoutId = S.currentWorkoutId;
-    if (!workoutId) return;
-    await _supa.from('exercise_swaps').insert({
-      workout_id: workoutId,
-      original_exercise: originalExercise,
-      swapped_for: swappedFor
-    });
-  } catch(e) { console.warn('Swap log failed:', e); }
-}
-
-const EQ_GROUPS=[
-  {id:'Band',label:'Bands',cats:['Band']},
-  {id:'Dumbbell',label:'Dumbbells',cats:['Dumbbell']},
-  {id:'Kettlebell',label:'Kettlebells',cats:['Kettlebell']},
-  {id:'Barbell',label:'Barbell',cats:['Barbell']},
-  {id:'Machine',label:'Machines',cats:['Machine']},
+const TIMES = ['20 min','30 min','45 min','60 min'];
+const MUSCLES = [
+  {id:'full_body',label:'Full body'},{id:'chest',label:'Chest'},{id:'back',label:'Back'},
+  {id:'legs',label:'Legs'},{id:'shoulders',label:'Shoulders'},{id:'biceps',label:'Biceps'},
+  {id:'triceps',label:'Triceps'},{id:'glutes',label:'Glutes'},{id:'core',label:'Core'}
 ];
-const MUSCLES=[{id:'full_body',label:'Full Body'},{id:'back_chest',label:'Back & Chest'},{id:'shoulders',label:'Shoulders'},{id:'arms',label:'Arms'},{id:'core',label:'Core'},{id:'legs',label:'Legs'}];
-const TIMES=['20 min','30 min','45 min','60 min'];
-const STYLES=[{id:'circuit',title:'Circuit',desc:'3-4 exercises back-to-back, rest between rounds'},{id:'superset',title:'Superset',desc:'Paired exercises back-to-back, rest after each pair'},{id:'progressive',title:'Progressive overload',desc:'Weight climbs each set, reps drop'},{id:'pyramid',title:'Pyramid',desc:'Weight climbs then descends'}];
-const GOAL_TEXT={lose_fat:'GOAL — Fat loss: high reps (15-20), short rest (30-45s), maximize heart rate and calorie burn.',recomp:'GOAL — Fat loss + muscle: moderate reps (10-15), moderate rest (45-60s), balance conditioning with hypertrophy.',gain_muscle:'GOAL — Muscle gain: moderate-heavy reps (8-12), rest 60-90s, prioritize progressive overload.'};
-const GOAL_LABELS={lose_fat:'Lose fat',recomp:'Lose fat + build',gain_muscle:'Build muscle'};
-const SCHEMAS={
-  circuit:`Each group: {"type":"circuit","group_label":"Circuit 1","sets_or_rounds":3,"rest_between_exercises":"none","rest_after_group":"60s","exercises":[{"name":"Exercise Name","reps":"12","cue":"coaching tip"}]}. MAX 4 exercises per circuit. 2 circuits if time allows.`,
-  superset:`Each group: {"type":"superset","group_label":"Superset A","sets_or_rounds":3,"rest_between_exercises":"10s","rest_after_group":"45s","exercises":[{"name":"Ex One","reps":"12","cue":"tip"},{"name":"Ex Two","reps":"12","cue":"tip"},{"name":"Ex Three","reps":"12","cue":"tip"}]}. EXACTLY 3 exercises per superset. Follow the superset count for the workout duration.`,
-  progressive:`Each group: {"type":"progressive","group_label":"Exercise Name","rest_between_sets":"60s","sets":[{"set_num":1,"reps":"12","weight":"light"},{"set_num":2,"reps":"10","weight":"moderate"},{"set_num":3,"reps":"8","weight":"heavy"},{"set_num":4,"reps":"6","weight":"heaviest"}],"cue":"tip"}. 4-6 exercises.`,
-  pyramid:`Each group: {"type":"pyramid","group_label":"Exercise Name","rest_between_sets":"45s","sets":[{"set_num":1,"reps":"15","weight":"light"},{"set_num":2,"reps":"12","weight":"moderate"},{"set_num":3,"reps":"10","weight":"heavy"},{"set_num":4,"reps":"12","weight":"moderate"},{"set_num":5,"reps":"15","weight":"light"}],"cue":"tip"}. 3-5 exercises.`
+const STYLES = [
+  {id:'circuit',label:'Circuit',desc:'All exercises back-to-back, rest between rounds'},
+  {id:'superset',label:'Superset',desc:'Paired exercises back-to-back, rest after each pair'},
+  {id:'progressive',label:'Progressive overload',desc:'Weight climbs each set, reps drop'},
+  {id:'pyramid',label:'Pyramid',desc:'Weight climbs then descends across sets'},
+];
+const STYLE_SCHEMAS = {
+  circuit: `{"type":"circuit","group_label":"Circuit 1","sets_or_rounds":3,"rest_between_exercises":"flow straight through — no rest","rest_after_group":"60s","exercises":[{"name":string,"reps":string,"weight_guidance":string,"cue":string}]}. 4-6 exercises per circuit. 2 circuits if time allows.`,
+  superset: `{"type":"superset","group_label":"Superset A","sets_or_rounds":3,"rest_between_exercises":"10s","rest_after_group":"45s","exercises":[{"name":string,"reps":string,"weight_guidance":string,"cue":string},{"name":string,"reps":string,"weight_guidance":string,"cue":string}]}. Exactly 2 exercises per superset. 4-6 supersets.`,
+  progressive: `{"type":"progressive","group_label":"Exercise Name","rest_between_sets":"45s","sets":[{"set_num":1,"reps":"12","weight":"light"},{"set_num":2,"reps":"10","weight":"moderate"},{"set_num":3,"reps":"8","weight":"heavy"},{"set_num":4,"reps":"6","weight":"heaviest"}],"cue":string}. 4-6 exercises.`,
+  pyramid: `{"type":"pyramid","group_label":"Exercise Name","rest_between_sets":"30s","sets":[{"set_num":1,"reps":"15","weight":"light"},{"set_num":2,"reps":"12","weight":"moderate"},{"set_num":3,"reps":"10","weight":"heavy"},{"set_num":4,"reps":"12","weight":"moderate"},{"set_num":5,"reps":"15","weight":"light"}],"cue":string}. 3-5 exercises.`
 };
 
-let S={
-  screen:'setup',tab:'workout',workoutView:false,workoutSource:'generate',
-  goal:'gain_muscle',muscles:['full_body'],time:'30 min',style:'circuit',eq:['Band','Dumbbell'],
-  loading:false,workout:null,error:null,
-  exercises:[],exLoading:true,exError:null,
-  exSearch:'',exCat:null,
-  saved:[],pendingDeleteId:null,
-  lightbox:null,
-  kabob:null,swapModal:null,flashTarget:null,woAnimated:false,currentWorkoutId:null
-};
-S.screen='main';
-try{S.saved=JSON.parse(localStorage.getItem(LS_SAVED)||'[]');}catch(e){S.saved=[];}
+// ── Helpers ──
+async function compressImage(file) {
+  return new Promise(resolve => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const MAX = 300;
+      let w = img.width, h = img.height;
+      if (w > h) { if (w > MAX) { h = Math.round(h * MAX / w); w = MAX; } }
+      else { if (h > MAX) { w = Math.round(w * MAX / h); h = MAX; } }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      URL.revokeObjectURL(url);
+      resolve(canvas.toDataURL('image/jpeg', 0.55));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(null); };
+    img.src = url;
+  });
+}
 
-// Load exercises from GitHub
-async function loadExercises(){
-  try{
-    const res=await fetch(EXERCISES_URL+'?t='+Date.now());
-    if(!res.ok)throw new Error('Failed to load exercises');
-    S.exercises=await res.json();
-    S.exLoading=false;
-  }catch(e){
-    S.exError='Could not load exercises. Check your connection.';
-    S.exLoading=false;
+function findImage(name, lib) {
+  if (!lib || !name) return null;
+  const norm = s => s.toLowerCase().replace(/[^a-z0-9]/g, ' ').replace(/\s+/g, ' ').trim();
+  const n = norm(name);
+  for (const [k, v] of Object.entries(lib)) {
+    if (norm(k) === n) return v.dataUrl;
   }
-  render();
-}
-if(S.screen==='main')loadExercises();
-
-function getFiltered(){
-  const allowed=EQ_GROUPS.filter(g=>S.eq.includes(g.id)).flatMap(g=>g.cats);
-  allowed.push('Body Weight');
-  return S.exercises.filter(ex=>allowed.includes(ex.equipment));
-}
-
-function findExercise(name){
-  const norm=s=>s.toLowerCase().replace(/[^a-z0-9]/g,' ').replace(/\s+/g,' ').trim();
-  const n=norm(name);
-  return S.exercises.find(ex=>norm(ex.name)===n)||S.exercises.find(ex=>{const en=norm(ex.name);return n.includes(en)||en.includes(n);});
-}
-
-function findImg(name){
-  const ex=findExercise(name);
-  return ex?IMAGES_BASE+encodeURIComponent(ex.file):null;
-}
-
-function getSwapCandidates(exerciseName){
-  const ex=findExercise(exerciseName);
-  const norm=s=>s.toLowerCase().replace(/[^a-z0-9]/g,' ').replace(/\s+/g,' ').trim();
-  const n=norm(exerciseName);
-  const allowed=getFiltered().map(e=>norm(e.name));
-
-  // Tier 1: same substitution_group (closest swap)
-  let t1=[];
-  if(ex?.substitution_group){
-    t1=S.exercises.filter(e=>
-      norm(e.name)!==n &&
-      allowed.includes(norm(e.name)) &&
-      e.substitution_group===ex.substitution_group
-    );
+  for (const [k, v] of Object.entries(lib)) {
+    const kn = norm(k);
+    if (n.includes(kn) || kn.includes(n)) return v.dataUrl;
   }
+  return null;
+}
 
-  // Tier 2: same movement_pattern, different equipment
-  let t2=[];
-  if(ex?.movement_pattern){
-    t2=S.exercises.filter(e=>
-      norm(e.name)!==n &&
-      allowed.includes(norm(e.name)) &&
-      e.movement_pattern===ex.movement_pattern &&
-      !t1.find(t=>norm(t.name)===norm(e.name))
-    );
-  }
+function loadLib() {
+  try { return JSON.parse(localStorage.getItem(LS_LIB) || '{}'); }
+  catch { return {}; }
+}
 
-  // Tier 3: same primary muscle, different pattern (last resort)
-  let t3=S.exercises.filter(e=>
-    norm(e.name)!==n &&
-    allowed.includes(norm(e.name)) &&
-    e.muscles[0]===ex?.muscles[0] &&
-    !t1.find(t=>norm(t.name)===norm(e.name)) &&
-    !t2.find(t=>norm(t.name)===norm(e.name))
+function saveLib(lib) {
+  try { localStorage.setItem(LS_LIB, JSON.stringify(lib)); return true; }
+  catch { return false; }
+}
+
+function storageUsed(lib) {
+  return new Blob([JSON.stringify(lib || {})]).size;
+}
+
+// ── Settings Modal ──
+function SettingsModal({ apiKey, onSave, onClose }) {
+  const [val, setVal] = useState(apiKey || '');
+  return h('div', { className: 'modal-overlay', onClick: e => { if (e.target === e.currentTarget) onClose(); } },
+    h('div', { className: 'modal' },
+      h('h3', null, 'Settings'),
+      h('div', { className: 'field', style: { marginBottom: '1rem' } },
+        h('label', { className: 'field-label' }, 'Anthropic API Key'),
+        h('input', {
+          type: 'password', placeholder: 'sk-ant-…',
+          value: val, onChange: e => setVal(e.target.value),
+          style: { marginBottom: '6px' }
+        }),
+        h('p', { className: 'hint' }, 'Get your key at ', h('a', { href: 'https://console.anthropic.com', target: '_blank', style: { color: 'var(--accent)' } }, 'console.anthropic.com'), '. Stored in your browser only — never sent anywhere except the Anthropic API.')
+      ),
+      h('div', { style: { display: 'flex', gap: '8px', justifyContent: 'flex-end' } },
+        h('button', { className: 'btn btn-ghost', onClick: onClose }, 'Cancel'),
+        h('button', { className: 'btn btn-primary', onClick: () => { if (val.trim()) { localStorage.setItem(LS_KEY, val.trim()); onSave(val.trim()); } } }, 'Save')
+      )
+    )
   );
-
-  // Tag each candidate with its tier for UI labeling
-  const tag=(arr,tier,note)=>arr.map(e=>({...e,_tier:tier,_note:note}));
-  return [
-    ...tag(t1,1,'Similar exercise'),
-    ...tag(t2,2,'Same pattern'),
-    ...tag(t3,3,'Same muscle group')
-  ];
 }
 
-function el(tag,props={},...kids){
-  const e=document.createElement(tag);
-  for(const[k,v]of Object.entries(props)){
-    if(k==='className')e.className=v;
-    else if(k==='style'&&typeof v==='object')Object.assign(e.style,v);
-    else if(k.startsWith('on'))e.addEventListener(k.slice(2).toLowerCase(),v);
-    else if(v!==false&&v!=null)e.setAttribute(k,v);
+// ── Lightbox ──
+function Lightbox({ src, onClose }) {
+  useEffect(() => {
+    const handler = e => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
+  return h('div', { className: 'lightbox', onClick: onClose },
+    h('img', { src, alt: 'Exercise reference', onClick: e => e.stopPropagation() })
+  );
+}
+
+// ── Library Tab ──
+function LibraryTab({ lib, onLibChange }) {
+  const [uploading, setUploading] = useState(false);
+  const [prog, setProg] = useState({ done: 0, total: 0, failed: 0 });
+  const [uploadMsg, setUploadMsg] = useState('');
+  const [dragOver, setDragOver] = useState(false);
+  const [search, setSearch] = useState('');
+  const [catFilter, setCatFilter] = useState(null);
+  const [lightbox, setLightbox] = useState(null);
+
+  async function processFiles(files) {
+    const arr = Array.from(files).filter(f => f.type.startsWith('image/'));
+    if (!arr.length) { setUploadMsg('No image files found.'); return; }
+    setUploading(true);
+    setProg({ done: 0, total: arr.length, failed: 0 });
+    setUploadMsg('');
+    const working = { ...lib };
+    let done = 0, failed = 0;
+    for (let i = 0; i < arr.length; i++) {
+      try {
+        const dataUrl = await compressImage(arr[i]);
+        if (dataUrl) {
+          const name = arr[i].name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ').trim();
+          working[name] = { dataUrl, name };
+          done++;
+        } else { failed++; }
+      } catch { failed++; }
+      setProg({ done, total: arr.length, failed });
+      if ((i + 1) % BATCH === 0 || (i + 1) === arr.length) {
+        const ok = saveLib(working);
+        if (!ok) { setUploadMsg(`⚠️ Storage full after ${done} images.`); onLibChange({ ...working }); setUploading(false); return; }
+        onLibChange({ ...working });
+      }
+    }
+    setUploadMsg(failed > 0 ? `Done — ${done} saved, ${failed} skipped.` : `All ${done} images saved ✓`);
+    setUploading(false);
   }
-  for(const c of kids){if(c==null||c===false)continue;e.appendChild(typeof c==='string'?document.createTextNode(c):c);}
-  return e;
-}
 
-function saveCurrent(){
-  const id=Date.now();
-  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  const d=new Date();
-  const dateStr=months[d.getMonth()]+' '+d.getDate();
-  S.saved.unshift({id,name:S.workout.workout_name,savedAt:dateStr,goal:S.goal,time:S.time,style:S.style,eq:[...S.eq],muscles:[...S.muscles],notes:'',workout:JSON.parse(JSON.stringify(S.workout))});
-  localStorage.setItem(LS_SAVED,JSON.stringify(S.saved));
-}
-function deleteSaved(id){S.saved=S.saved.filter(s=>s.id!==id);localStorage.setItem(LS_SAVED,JSON.stringify(S.saved));}
-function persistSavedEdits(){
-  if(S.workoutSource==='saved'&&S.viewingSavedId){
-    const idx=S.saved.findIndex(s=>s.id===S.viewingSavedId);
-    if(idx>=0){S.saved[idx].workout=JSON.parse(JSON.stringify(S.workout));localStorage.setItem(LS_SAVED,JSON.stringify(S.saved));}
+  function onDrop(e) { e.preventDefault(); setDragOver(false); processFiles(e.dataTransfer.files); }
+  function onDragOver(e) { e.preventDefault(); setDragOver(true); }
+  function onDragLeave() { setDragOver(false); }
+  function onFileChange(e) { processFiles(e.target.files); e.target.value = ''; }
+
+  function renameEntry(oldName, newName) {
+    if (!newName || newName === oldName) return;
+    const nl = { ...lib };
+    const entry = nl[oldName]; delete nl[oldName];
+    nl[newName] = { ...entry, name: newName };
+    saveLib(nl); onLibChange(nl);
   }
-}
-function isSaved(){return S.saved.some(s=>s.name===S.workout?.workout_name);}
 
-function updateNotes(id,notes){const idx=S.saved.findIndex(s=>s.id===id);if(idx>=0){S.saved[idx].notes=notes;localStorage.setItem(LS_SAVED,JSON.stringify(S.saved));}}
-function confirmDeleteSaved(id){
-  if(S.pendingDeleteId===id){
-    deleteSaved(id);S.pendingDeleteId=null;
-    if(S.workoutView){S.workoutView=false;S.tab='saved';}
-    render();
-  }else{
-    S.pendingDeleteId=id;render();
-    setTimeout(()=>{if(S.pendingDeleteId===id){S.pendingDeleteId=null;render();}},3000);
+  function deleteEntry(name) {
+    if (!confirm(`Remove "${name}"?`)) return;
+    const nl = { ...lib }; delete nl[name];
+    saveLib(nl); onLibChange(nl);
   }
-}
-function doRemove(gIdx,eIdx,type){S.kabob=null;if(type==='exercise'){S.workout.groups[gIdx].exercises.splice(eIdx,1);if(!S.workout.groups[gIdx].exercises.length)S.workout.groups.splice(gIdx,1);}else{S.workout.groups.splice(gIdx,1);}persistSavedEdits();render();}
-function doMove(gIdx,eIdx,type,dir){
-  S.kabob=null;
-  if(type==='exercise'){
-    const exs=S.workout.groups[gIdx].exercises;
-    const ni=eIdx+dir;if(ni<0||ni>=exs.length)return render();
-    [exs[ni],exs[eIdx]]=[exs[eIdx],exs[ni]];
-    S.flashTarget={gIdx,eIdx:ni,type:'exercise'};
-  }else{
-    const gs=S.workout.groups;
-    const ni=gIdx+dir;if(ni<0||ni>=gs.length)return render();
-    [gs[ni],gs[gIdx]]=[gs[gIdx],gs[ni]];
-    S.flashTarget={gIdx:ni,type:'group'};
+
+  function clearAll() {
+    if (!confirm('Delete all exercise images? This cannot be undone.')) return;
+    localStorage.removeItem(LS_LIB);
+    onLibChange({});
+    setUploadMsg('');
   }
-  render();
-  setTimeout(()=>{S.flashTarget=null;persistSavedEdits();},1700);
+
+  const entries = Object.entries(lib);
+  const usedBytes = storageUsed(lib);
+  const usedPct = Math.min(100, (usedBytes / MAX_STORAGE) * 100);
+  const fillClass = usedPct > 90 ? 'full' : usedPct > 70 ? 'warn' : '';
+  const catsInLib = [...new Set(entries.map(([k]) => getCat(k)))].filter(c => c !== 'Other').sort();
+  const filtered = entries.filter(([k]) => {
+    const ms = !search || k.toLowerCase().includes(search.toLowerCase());
+    const mc = !catFilter || getCat(k) === catFilter;
+    return ms && mc;
+  }).sort((a, b) => a[0].localeCompare(b[0]));
+
+  return h('div', null,
+    lightbox && h(Lightbox, { src: lightbox, onClose: () => setLightbox(null) }),
+
+    h('div', {
+      className: `drop-zone${dragOver ? ' drag-over' : ''}`,
+      onDragOver, onDragLeave, onDrop
+    },
+      h('input', { type: 'file', accept: 'image/*', multiple: true, onChange: onFileChange, disabled: uploading }),
+      uploading
+        ? h('p', { style: { fontWeight: 500, fontSize: '14px' } }, `Processing ${prog.done} of ${prog.total}…`)
+        : h('div', null,
+            h('p', { className: 'drop-zone-title' }, 'Drag images here'),
+            h('p', { className: 'drop-zone-sub' }, 'or click to browse · select all 102 at once'),
+            h('p', { className: 'drop-zone-sub', style: { marginTop: '4px' } }, 'Filename becomes the exercise name')
+          )
+    ),
+
+    uploading && h('div', { className: 'progress-box' },
+      h('div', { className: 'progress-meta' },
+        h('span', null, `${prog.done} saved`),
+        h('span', null, `${prog.failed > 0 ? prog.failed + ' failed · ' : ''}${prog.total - prog.done} remaining`)
+      ),
+      h('div', { className: 'progress-track' },
+        h('div', { className: 'progress-fill', style: { width: prog.total ? `${(prog.done / prog.total) * 100}%` : '0%' } })
+      )
+    ),
+
+    uploadMsg && h('p', { style: { fontSize: '13px', color: 'var(--text2)', marginTop: '8px' } }, uploadMsg),
+
+    h('div', { className: 'storage-row' },
+      h('span', null, `${entries.length} exercises in library`),
+      h('span', null, `${(usedBytes / 1024).toFixed(0)} KB used`)
+    ),
+    h('div', { className: 'storage-track' },
+      h('div', { className: `storage-fill ${fillClass}`, style: { width: `${usedPct}%` } })
+    ),
+
+    entries.length > 0 && h('div', { style: { marginTop: '16px' } },
+      h('input', { className: 'search-input', placeholder: 'Search exercises…', value: search, onChange: e => setSearch(e.target.value) }),
+      catsInLib.length > 0 && h('div', { className: 'cat-filter' },
+        h('button', { className: `cat-tag${catFilter === null ? ' active' : ''}`, onClick: () => setCatFilter(null) }, 'All'),
+        catsInLib.map(c => h('button', {
+          key: c,
+          className: `cat-tag${catFilter === c ? ' active' : ''}`,
+          onClick: () => setCatFilter(catFilter === c ? null : c)
+        }, `${c} (${entries.filter(([k]) => getCat(k) === c).length})`))
+      ),
+      h('div', { className: 'lib-grid' },
+        filtered.map(([key, val]) => {
+          const cat = getCat(key);
+          return h('div', { key, className: 'lib-card' },
+            h('img', { src: val.dataUrl, className: 'lib-card-img', alt: key, onClick: () => setLightbox(val.dataUrl) }),
+            cat !== 'Other' && h('div', { className: 'lib-cat-badge' }, cat),
+            h('div', { className: 'lib-card-body' },
+              h('input', {
+                className: 'lib-card-input',
+                defaultValue: key,
+                placeholder: 'Exercise name',
+                onBlur: e => renameEntry(key, e.target.value.trim())
+              })
+            ),
+            h('button', { className: 'lib-card-del', onClick: () => deleteEntry(key) }, '×')
+          );
+        })
+      ),
+      h('div', { style: { marginTop: '1rem', textAlign: 'right' } },
+        h('button', { className: 'btn btn-ghost', style: { fontSize: '12px' }, onClick: clearAll }, 'Clear all images')
+      )
+    ),
+
+    entries.length === 0 && !uploading && h('p', {
+      style: { fontSize: '13px', color: 'var(--text3)', textAlign: 'center', marginTop: '2rem' }
+    }, 'No images yet — drag and drop or click above to upload')
+  );
 }
-function doSwap(gIdx,eIdx,type,name){S.kabob=null;S.swapModal={gIdx,eIdx,type,name,candidates:getSwapCandidates(name)};render();}
-function applySwap(newName){
-  const{gIdx,eIdx,type,name:origName}=S.swapModal;
-  S.swapModal=null;
-  if(type==='exercise'){
-    const ex=S.workout.groups[gIdx].exercises[eIdx];
-    S.workout.groups[gIdx].exercises[eIdx]={...ex,name:newName};
-    logSwap(origName, newName);
-  }else{
-    S.workout.groups[gIdx].group_label=newName;
+
+// ── Workout Tab ──
+function WorkoutTab({ lib }) {
+  const [muscle, setMuscle] = useState('full_body');
+  const [time, setTime] = useState('45 min');
+  const [style, setStyle] = useState('circuit');
+  const [eq, setEq] = useState(['Body Weight']);
+  const [loading, setLoading] = useState(false);
+  const [workout, setWorkout] = useState(null);
+  const [error, setError] = useState(null);
+  const [visible, setVisible] = useState([]);
+  const [lightbox, setLightbox] = useState(null);
+
+  function toggleEq(cat) {
+    if (cat === 'Body Weight') return;
+    setEq(p => p.includes(cat) ? p.filter(e => e !== cat) : [...p, cat]);
   }
-  persistSavedEdits();render();
-}
 
-function render(){
-  const app=document.getElementById('app');app.innerHTML='';
-  if(S.lightbox){const lb=el('div',{className:'lightbox',onClick:()=>{S.lightbox=null;render();}});lb.appendChild(el('img',{src:S.lightbox,alt:'',onClick:e=>e.stopPropagation()}));app.appendChild(lb);}
-
-  if(S.kabob)app.appendChild(renderKabobSheet());
-  if(S.swapModal)app.appendChild(renderSwapModal());
-  if(S.screen==='setup'){app.appendChild(renderSetup());return;}
-  if(S.workoutView){app.appendChild(renderWorkoutPage());if(S.woAnimated){document.querySelectorAll('.group-card').forEach(c=>c.classList.add('show'));}return;}
-  app.appendChild(renderHdr());app.appendChild(renderTabs());
-  if(S.tab==='workout')app.appendChild(renderWorkoutForm());
-  else if(S.tab==='exercises')app.appendChild(renderExercisesTab());
-  else app.appendChild(renderSavedTab());
-}
-
-function renderSetup(){
-  const w=el('div',{className:'setup'});
-  w.appendChild(el('h2',{},'Workout Agent'));
-  return w;
-}
-
-function renderHdr(){
-  const h=el('div',{className:'hdr'});h.appendChild(el('span',{},''));
-  h.appendChild(el('span',{},''));
-  return h;
-}
-
-function renderTabs(){
-  const t=el('div',{className:'tabs'});
-  const lc=S.exercises.length;
-  const sc=S.saved.length;
-  [['workout','Workout'],['exercises',lc?`Exercises (${lc})`:'Exercises'],['saved',sc?`Saved (${sc})`:'Saved']].forEach(([id,lbl])=>{
-    t.appendChild(el('button',{className:'tab'+(S.tab===id?' on':''),onClick:()=>{S.tab=id;render();}},lbl));
-  });
-  return t;
-}
-
-
-
-function renderKabobSheet(){
-  const{gIdx,eIdx,type}=S.kabob;
-  let name,canUp,canDown;
-  if(type==='exercise'){const exs=S.workout.groups[gIdx].exercises;name=exs[eIdx].name;canUp=eIdx>0;canDown=eIdx<exs.length-1;}
-  else{name=S.workout.groups[gIdx].group_label;canUp=gIdx>0;canDown=gIdx<S.workout.groups.length-1;}
-  const ov=el('div',{className:'sheet-overlay',onClick:e=>{if(e.target===ov){S.kabob=null;render();}}});
-  const sheet=el('div',{className:'sheet'});
-  sheet.appendChild(el('div',{className:'sheet-title'},name));
-  [{icon:'⇄',label:'Swap',onClick:()=>doSwap(gIdx,eIdx,type,name)},
-   {icon:'✕',label:'Remove',onClick:()=>doRemove(gIdx,eIdx,type)},
-   {icon:'↑',label:'Move up',disabled:!canUp,onClick:()=>doMove(gIdx,eIdx,type,-1)},
-   {icon:'↓',label:'Move down',disabled:!canDown,onClick:()=>doMove(gIdx,eIdx,type,1)}
-  ].forEach(a=>{
-    const b=el('button',{className:'sheet-action'+(a.disabled?' disabled':''),onClick:a.disabled?null:a.onClick});
-    b.appendChild(el('span',{className:'sheet-action-icon'},a.icon));
-    b.appendChild(el('span',{},a.label));
-    sheet.appendChild(b);
-  });
-  sheet.appendChild(el('button',{className:'sheet-cancel',onClick:()=>{S.kabob=null;render();}},'Cancel'));
-  ov.appendChild(sheet);return ov;
-}
-
-function renderSwapModal(){
-  const{name,candidates}=S.swapModal;
-  const ov=el('div',{className:'swap-overlay',onClick:e=>{if(e.target===ov){S.swapModal=null;render();}}});
-  const sheet=el('div',{className:'swap-sheet'});
-  const hdr=el('div',{className:'swap-hdr'});
-  hdr.appendChild(el('h3',{},'Swap exercise'));
-  hdr.appendChild(el('p',{},name));
-  sheet.appendChild(hdr);
-  const list=el('div',{className:'swap-list'});
-  if(!candidates.length){list.appendChild(el('div',{className:'empty-state'},'No similar exercises found'));}
-  else{
-    candidates.forEach(ex=>{
-      const item=el('div',{className:'swap-item',onClick:()=>applySwap(ex.name)});
-      const imgUrl=IMAGES_BASE+encodeURIComponent(ex.file);
-      const img=el('img',{src:imgUrl,className:'swap-thumb',alt:ex.name});
-      img.onerror=()=>img.style.display='none';
-      item.appendChild(img);
-      const info=el('div',{});
-      info.appendChild(el('div',{className:'swap-name'},ex.name));
-      info.appendChild(el('div',{className:'swap-cat'},ex.equipment+' · '+ex.muscles[0]+(ex._note?' · '+ex._note:'')));
-      item.appendChild(info);
-      list.appendChild(item);
-    });
+  function getFilteredExercises() {
+    return Object.keys(lib).filter(n => eq.includes(getCat(n)));
   }
-  sheet.appendChild(list);
-  sheet.appendChild(el('button',{className:'swap-cancel',onClick:()=>{S.swapModal=null;render();}},'Cancel'));
-  ov.appendChild(sheet);return ov;
-}
 
-function renderWorkoutForm(){
-  const w=el('div',{});
-  w.appendChild(el('h1',{className:'page-title'},'Build Your\nSession'));
+  async function generate() {
+    const apiKey = localStorage.getItem(LS_KEY);
+    if (!apiKey) { setError('No API key set — click the ⚙ icon to add it.'); return; }
+    setLoading(true); setWorkout(null); setError(null); setVisible([]);
+    const filtered = getFilteredExercises();
+    const hasLib = Object.keys(lib).length > 0;
+    const exList = filtered.length > 0
+      ? `EXERCISE LIBRARY — use ONLY these exact names, copy spelling precisely:\n${filtered.join(', ')}`
+      : hasLib
+        ? `No exercises match selected equipment. Use expert knowledge for: ${eq.join(', ')}.`
+        : `No library loaded. Use expert knowledge.`;
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 1200,
+          system: 'You are an expert strength coach. Return ONLY raw valid JSON. No markdown fences, no preamble, no explanation.',
+          messages: [{
+            role: 'user',
+            content: `Generate a ${time} strength workout.
+Focus: ${muscle.replace('_', ' ')}
+Equipment categories: ${eq.join(', ')}
+Training style: ${style}
 
-  const gf=el('div',{className:'field'});gf.appendChild(el('span',{className:'flbl'},'Goal'));
-  const gs=el('div',{className:'seg'});
-  [['lose_fat','Lose fat'],['recomp','Lose fat + build'],['gain_muscle','Build muscle']].forEach(([id,lbl])=>{
-    gs.appendChild(el('button',{className:'seg-btn'+(S.goal===id?' on':''),onClick:()=>{S.goal=id;render();}},lbl));
-  });
-  gf.appendChild(gs);w.appendChild(gf);
+${exList}
 
-  const ff=el('div',{className:'field'});ff.appendChild(el('span',{className:'flbl'},'Focus'));
-  const fp=el('div',{className:'pills'});
-  MUSCLES.forEach(m=>{
-    fp.appendChild(el('button',{className:'pill'+(S.muscles.includes(m.id)?' on':''),onClick:()=>{
-      if(m.id==='full_body'){S.muscles=['full_body'];}
-      else{let nx=S.muscles.filter(x=>x!=='full_body');if(nx.includes(m.id))nx=nx.filter(x=>x!==m.id);else nx.push(m.id);S.muscles=nx.length===0?['full_body']:nx;}
-      render();
-    }},m.label));
-  });
-  ff.appendChild(fp);w.appendChild(ff);
+RULES:
+- Use EXACT names from the library — copy spelling precisely, do not modify or invent names
+- Fast-paced: cardio baked in through pace and short rest — NOT by adding running or cardio machines
+- Body Weight exercises are always allowed regardless of equipment selection
 
-  const tf=el('div',{className:'field'});tf.appendChild(el('span',{className:'flbl'},'Time'));
-  const ts=el('div',{className:'seg'});
-  TIMES.forEach(t=>{ts.appendChild(el('button',{className:'seg-btn'+(S.time===t?' on':''),onClick:()=>{S.time=t;render();}},t));});
-  tf.appendChild(ts);w.appendChild(tf);
+Groups schema (each group follows this structure):
+${STYLE_SCHEMAS[style]}
 
-  const sf=el('div',{className:'field'});sf.appendChild(el('span',{className:'flbl'},'Training Style'));
-  const sg=el('div',{className:'style-grid'});
-  STYLES.forEach(s=>{
-    const c=el('div',{className:'scard'+(S.style===s.id?' on':''),onClick:()=>{S.style=s.id;render();}});
-    c.appendChild(el('div',{className:'scard-dot'}));
-    c.appendChild(el('p',{className:'scard-title'},s.title));
-    c.appendChild(el('p',{className:'scard-desc'},s.desc));
-    sg.appendChild(c);
-  });
-  sf.appendChild(sg);w.appendChild(sf);
-
-  const ef=el('div',{className:'field'});ef.appendChild(el('span',{className:'flbl'},'Equipment'));
-  const ep=el('div',{className:'pills'});
-  EQ_GROUPS.forEach(g=>{
-    const cnt=S.exercises.filter(ex=>g.cats.includes(ex.equipment)).length;
-    ep.appendChild(el('button',{className:'pill'+(S.eq.includes(g.id)?' on':''),onClick:()=>{
-      if(S.eq.includes(g.id))S.eq=S.eq.filter(e=>e!==g.id);else S.eq.push(g.id);render();
-    }},cnt>0?`${g.label} · ${cnt}`:g.label));
-  });
-  ef.appendChild(ep);
-  w.appendChild(ef);
-
-  const gb=el('button',{className:'gen-btn'+(S.loading?' pulsing':''),onClick:doGenerate},S.loading?'Building your workout…':'Generate Workout →');
-  if(S.loading)gb.setAttribute('disabled','true');
-  const gbWrap=el('div',{className:'gen-btn-wrap'});
-  gbWrap.appendChild(gb);
-  w.appendChild(gbWrap);
-  if(S.error)w.appendChild(el('div',{className:'err'},S.error));
-  return w;
-}
-
-async function doGenerate(){
-  S.loading=true;S.workout=null;S.error=null;render();
-  const filtered=getFiltered();
-
-  const focusKey=S.muscles.includes('full_body')?'full_body':S.muscles.join('_');
-  const recentHistory=await fetchRecentHistory(focusKey);
-
-  // Recency scoring: last session = -10, 2 ago = -5, 3 ago = -2
-  const recencyScores={};
-  const penalties=[-10,-5,-2];
-  recentHistory.forEach((h,i)=>{
-    (h.exercises||[]).forEach(name=>{
-      recencyScores[name]=(recencyScores[name]||0)+penalties[i];
-    });
-  });
-  const allRecent=Object.keys(recencyScores);
-  const strongAvoid=allRecent.filter(n=>recencyScores[n]<=-10);
-  const softAvoid=allRecent.filter(n=>recencyScores[n]>-10&&recencyScores[n]<=-5);
-  const allUsed=new Set(allRecent);
-  const freshExercises=filtered.filter(e=>!allUsed.has(e.name)).map(e=>e.name);
-
-  let recentHint='';
-  if(strongAvoid.length>0)recentHint+=`\n\nDO NOT USE (used last session): ${strongAvoid.join(', ')}`;
-  if(softAvoid.length>0)recentHint+=`\nPREFER TO AVOID (used recently): ${softAvoid.join(', ')}`;
-  if(freshExercises.length>0)recentHint+=`\nPREFER THESE (not used recently): ${freshExercises.join(', ')}`;
-
-  // Circuit timing rules
-  const circuitRules={'20 min':'1 circuit, 4 exercises, 3 rounds','30 min':'2 circuits, 3 exercises each, 3 rounds each','45 min':'2 circuits, 4 exercises each, 3 rounds each','60 min':'3 circuits, 4 exercises each, 3 rounds each'};
-  const circuitNote=S.style==='circuit'?`\nCIRCUIT STRUCTURE: ${circuitRules[S.time]||'2 circuits, 3-4 exercises, 3 rounds'}. Follow this exactly.`:'';
-
-  // Superset timing rules
-  const supersetRules={'20 min':'2 supersets, 3 rounds each, 3 exercises each','30 min':'3 supersets, 3 rounds each, 3 exercises each','45 min':'4 supersets, 3 rounds each, 3 exercises each','60 min':'5 supersets, 3 rounds each, 3 exercises each'};
-  const supersetNote=S.style==='superset'?`\nSUPERSET STRUCTURE: ${supersetRules[S.time]||'3 supersets, 3 rounds, 3 exercises each'}. Each superset MUST have EXACTLY 3 exercises. Follow this exactly.`:'';
-
-  // Legs focus includes calves
-  const legsNote=S.muscles.includes('legs')?' Legs includes calves — include at least one calf exercise (e.g. Calf Raise, Lateral Step Up) as a finisher slot.':'';
-
-  // Annotate library with movement patterns for smarter ordering
-  const exList=filtered.length>0
-    ?`EXERCISE LIBRARY — use ONLY these exact names:\n${filtered.map(e=>{
-        const meta=e.movement_pattern?` [${e.movement_pattern},pri:${e.order_priority},${e.role_hint}]`:'';
-        return e.name+meta;
-      }).join(', ')}`
-    :'No library loaded. Use expert knowledge.';
-
-  const ml=S.muscles.includes('full_body')?'Full Body':S.muscles.map(id=>MUSCLES.find(m=>m.id===id)?.label||id).join(', ');
-  const eqList=EQ_GROUPS.filter(g=>S.eq.includes(g.id)).map(g=>g.label).join(', ')||'Body Weight only';
-  try{
-    const res=await fetch('/api/generate',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        model:'claude-haiku-4-5',max_tokens:2000,
-        system:'Expert strength coach. Return ONLY a single valid JSON object. No markdown, no backticks. Start with { end with }. Exercise ordering rules: order_priority 1 (power_compound) goes first, priority 2 (primary compounds) second, priority 3 (accessory) third, priority 4 (isolation/finisher) last. Never place two exercises with the same movement_pattern back-to-back. Body weight exercises (role_hint: accessory or finisher) go in slots 3-4 of circuits, not slot 1.',
-        messages:[{role:'user',content:`Generate a ${S.time} strength workout.\\nFocus: ${ml}${legsNote}\\nEquipment: ${eqList}\\nStyle: ${S.style}\\n${GOAL_TEXT[S.goal]}\\n\\n${exList}${recentHint}${circuitNote}${supersetNote}\\n\\nRULES: Use EXACT exercise names from the library. Body Weight always allowed. Follow order_priority for exercise sequencing within groups.\\n\\n${SCHEMAS[S.style]}\\n\\nReturn: {"workout_name":"string","warmup":[{"name":"string","duration":"string"}],"groups":[],"cooldown":[{"name":"string","duration":"string"}]}`}]
-      })
-    });
-    const data=await res.json();
-    if(data.error)throw new Error(data.error.message);
-    const raw=data.content?.find(b=>b.type==='text')?.text||'';
-    // Robust extraction: strip markdown fences, then extract from first { to last }
-    const stripped=raw.replace(/^```[\w]*\n?/,'').replace(/\n?```$/,'').trim();
-    const firstBrace=stripped.indexOf('{');
-    const lastBrace=stripped.lastIndexOf('}');
-    if(firstBrace===-1||lastBrace===-1)throw new Error('No JSON found in response.');
-    const clean=stripped.slice(firstBrace,lastBrace+1);
-    const parsed=JSON.parse(clean);
-    if(!parsed.groups||!Array.isArray(parsed.groups))throw new Error('Invalid structure.');
-    const newWorkoutId=crypto.randomUUID();
-    S.currentWorkoutId=newWorkoutId;
-    S.workout=parsed;S.loading=false;S.workoutView=true;S.woAnimated=false;S.workoutSource='generate';S.viewingSavedId=null;render();
-    window.scrollTo(0,0);
-    saveWorkoutHistory(newWorkoutId);
-    setTimeout(()=>{document.querySelectorAll('.group-card').forEach((c,i)=>setTimeout(()=>c.classList.add('show'),i*120));S.woAnimated=true;},50);
-  }catch(e){S.error=`Could not generate: ${e.message}`;S.loading=false;render();}
-}
-
-function renderWorkoutPage(){
-  const w=el('div',{});
-  const hdr=el('div',{className:'hdr'});
-  const left=el('div',{className:'hdr-left'});
-  const back=el('button',{className:'back-btn',onClick:()=>{
-    S.workoutView=false;
-    if(S.workoutSource==='saved')S.tab='saved';
-    render();
-  }});
-  back.innerHTML='← Back';left.appendChild(back);
-  hdr.appendChild(left);
-
-  w.appendChild(hdr);
-  const wo=S.workout;
-  w.appendChild(el('p',{className:'session-eyebrow'},'Your Session'));
-  w.appendChild(el('h2',{className:'wo-title'},wo.workout_name));
-  const tags=el('div',{className:'wo-tags'});
-  tags.appendChild(el('span',{className:'wo-tag'},GOAL_LABELS[S.goal]||S.goal));
-  tags.appendChild(el('span',{className:'wo-tag'},S.time));
-  tags.appendChild(el('span',{className:'wo-tag'},STYLES.find(s=>s.id===S.style)?.title||S.style));
-  w.appendChild(tags);
-  if(wo.warmup?.length){
-    w.appendChild(el('p',{className:'sec-lbl'},'Warm-up'));
-    const wu=el('div',{style:{borderTop:'.5px solid var(--b1)'}});
-    wo.warmup.forEach(x=>{const row=el('div',{className:'wu-item'});row.appendChild(el('span',{},x.name));row.appendChild(el('span',{className:'wu-dur'},x.duration));wu.appendChild(row);});
-    w.appendChild(wu);
+Return this exact JSON shape:
+{"workout_name":string,"warmup":[{"name":string,"duration":string}],"groups":[...per schema above...],"cooldown":[{"name":string,"duration":string}]}`
+          }]
+        })
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error.message);
+      const text = data.content?.find(b => b.type === 'text')?.text || '';
+      const parsed = JSON.parse(text.replace(/```json|```/g, '').trim());
+      setWorkout(parsed);
+      parsed.groups.forEach((_, i) => setTimeout(() => setVisible(v => [...v, i]), i * 110 + 200));
+    } catch (e) {
+      setError(`Error: ${e.message || 'Could not generate workout. Check your API key and try again.'}`);
+    }
+    setLoading(false);
   }
-  w.appendChild(el('p',{className:'sec-lbl'},'Workout'));
-  (wo.groups||[]).forEach((g,gi)=>w.appendChild(renderGroup(g,gi)));
-  if(wo.cooldown?.length){
-    w.appendChild(el('p',{className:'sec-lbl',style:{marginTop:'1rem'}},'Cool-down'));
-    const cd=el('div',{style:{borderTop:'.5px solid var(--b1)'}});
-    wo.cooldown.forEach(x=>{const row=el('div',{className:'wu-item'});row.appendChild(el('span',{},x.name));row.appendChild(el('span',{className:'wu-dur'},x.duration));cd.appendChild(row);});
-    w.appendChild(cd);
+
+  const libEntries = Object.entries(lib);
+  const filteredCount = getFilteredExercises().length;
+
+  function renderGroup(g, i) {
+    const isVis = visible.includes(i);
+    if (g.type === 'circuit' || g.type === 'superset') {
+      const isC = g.type === 'circuit';
+      return h('div', { key: i, className: `group-card${isVis ? ' visible' : ''}` },
+        h('div', { className: 'group-header' },
+          h('span', { className: 'group-header-title' }, g.group_label),
+          h('span', { className: 'group-header-meta' }, isC ? `${g.sets_or_rounds} rounds` : `${g.sets_or_rounds} sets`)
+        ),
+        (g.exercises || []).map((ex, j) => {
+          const img = findImage(ex.name, lib);
+          return h('div', { key: j, className: 'ex-row' },
+            h('div', { className: 'ex-badge' }, isC ? j + 1 : ['A1','A2','B1','B2'][j] || j + 1),
+            h('div', { className: 'ex-body' },
+              h('p', { className: 'ex-name' }, ex.name),
+              h('div', { className: 'ex-chips' },
+                h('span', null, ex.reps),
+                ex.weight_guidance && h('span', null, ex.weight_guidance)
+              ),
+              ex.cue && h('div', { className: 'ex-cue' }, ex.cue)
+            ),
+            img && h('img', { src: img, className: 'ex-thumb', onClick: () => setLightbox(img), alt: ex.name })
+          );
+        }),
+        h('div', { className: 'rest-footer' },
+          isC
+            ? `No rest between exercises  ·  Rest ${g.rest_after_group} between rounds`
+            : `${g.rest_between_exercises} between exercises  ·  Rest ${g.rest_after_group} after superset`
+        )
+      );
+    }
+    if (g.type === 'progressive' || g.type === 'pyramid') {
+      const img = findImage(g.group_label, lib);
+      return h('div', { key: i, className: `group-card${isVis ? ' visible' : ''}` },
+        h('div', { className: 'group-header' },
+          h('span', { className: 'group-header-title' }, g.group_label),
+          h('span', { className: 'group-header-meta' }, `Rest ${g.rest_between_sets} between sets`)
+        ),
+        h('div', { style: { padding: '12px 14px' } },
+          img && h('img', { src: img, style: { width: '100%', maxHeight: '150px', objectFit: 'cover', borderRadius: 'var(--radius-sm)', marginBottom: '10px', cursor: 'pointer' }, onClick: () => setLightbox(img), alt: g.group_label }),
+          h('div', { className: 'set-table' },
+            (g.sets || []).map((s, j) =>
+              h('div', { key: j, className: 'set-cell' },
+                h('div', { className: 'set-cell-label' }, `Set ${s.set_num}`),
+                h('div', { className: 'set-cell-reps' }, s.reps),
+                h('div', { className: 'set-cell-wt' }, s.weight)
+              )
+            )
+          ),
+          g.cue && h('div', { className: 'ex-cue', style: { marginTop: '10px' } }, g.cue)
+        )
+      );
+    }
+    return null;
   }
-  // Save button — only show when viewing a freshly generated workout
-  if(S.workoutSource==='generate'){
-    const already=isSaved();
-    const saveBtn=el('button',{className:'save-btn'+(already?' saved':''),onClick:()=>{if(!already){saveCurrent();render();}}},already?'✓ Saved':'+ Save workout');
-    w.appendChild(saveBtn);
-  }
-  // Delete button — when viewing a saved workout
-  if(S.workoutSource==='saved'&&S.viewingSavedId){
-    const isPending=S.pendingDeleteId===S.viewingSavedId;
-    w.appendChild(el('button',{className:'delete-btn'+(isPending?' pending':''),onClick:()=>confirmDeleteSaved(S.viewingSavedId)},isPending?'Tap again to confirm delete':'Delete workout'));
-  }
-  return w;
+
+  return h('div', null,
+    lightbox && h(Lightbox, { src: lightbox, onClose: () => setLightbox(null) }),
+    !libEntries.length && h('div', { className: 'notice' }, '→ Upload your exercise images in the Image Library tab first.'),
+
+    h('div', { className: 'field' },
+      h('span', { className: 'field-label' }, 'Focus'),
+      h('div', { className: 'pill-group' },
+        MUSCLES.map(m => h('button', { key: m.id, className: `pill${muscle === m.id ? ' active' : ''}`, onClick: () => setMuscle(m.id) }, m.label))
+      )
+    ),
+
+    h('div', { className: 'field' },
+      h('span', { className: 'field-label' }, 'Time'),
+      h('div', { className: 'seg' },
+        TIMES.map(t => h('button', { key: t, className: `seg-btn${time === t ? ' active' : ''}`, onClick: () => setTime(t) }, t))
+      )
+    ),
+
+    h('div', { className: 'field' },
+      h('span', { className: 'field-label' }, 'Training style'),
+      h('div', { className: 'style-grid' },
+        STYLES.map(s => h('div', { key: s.id, className: `style-card${style === s.id ? ' active' : ''}`, onClick: () => setStyle(s.id) },
+          h('p', { className: 'style-card-title' }, s.label),
+          h('p', { className: 'style-card-desc' }, s.desc)
+        ))
+      )
+    ),
+
+    h('div', { className: 'field' },
+      h('span', { className: 'field-label' }, 'Equipment'),
+      h('div', { className: 'pill-group' },
+        CAT_DISPLAY.map(cat => {
+          const cnt = libEntries.filter(([k]) => getCat(k) === cat).length;
+          const isActive = eq.includes(cat);
+          const isBodyWeight = cat === 'Body Weight';
+          return h('button', {
+            key: cat,
+            className: `pill${isActive ? ' active' : ''}${isBodyWeight ? ' always-on' : ''}`,
+            onClick: () => toggleEq(cat)
+          }, cnt > 0 ? `${cat} · ${cnt}` : cat);
+        })
+      ),
+      filteredCount > 0 && libEntries.length > 0 && h('p', { className: 'eq-count' }, `${filteredCount} exercises available for this selection`)
+    ),
+
+    h('button', { className: 'gen-btn', onClick: generate, disabled: loading },
+      loading ? 'Building your workout…' : 'Generate workout ↗'
+    ),
+
+    error && h('div', { className: 'error-box' }, error),
+
+    workout && h('div', null,
+      h('hr', { className: 'divider' }),
+      h('p', { className: 'workout-title' }, workout.workout_name),
+      workout.warmup?.length > 0 && h('div', null,
+        h('p', { className: 'section-label' }, 'Warm-up'),
+        workout.warmup.map((w, i) => h('div', { key: i, className: 'warmup-item' }, `${w.name} — ${w.duration}`))
+      ),
+      h('p', { className: 'section-label' }, 'Workout'),
+      h('div', { className: 'groups-list' }, (workout.groups || []).map((g, i) => renderGroup(g, i))),
+      workout.cooldown?.length > 0 && h('div', { style: { marginTop: '1rem' } },
+        h('p', { className: 'section-label' }, 'Cool-down'),
+        workout.cooldown.map((w, i) => h('div', { key: i, className: 'warmup-item' }, `${w.name} — ${w.duration}`))
+      )
+    )
+  );
 }
 
-function renderGroup(g,gIdx){
-  const isGroupFlash=S.flashTarget&&S.flashTarget.type==='group'&&S.flashTarget.gIdx===gIdx;
-  const card=el('div',{className:'group-card'+(isGroupFlash?' flash':'')});
-  const hdr=el('div',{className:'g-hdr'});
-  hdr.appendChild(el('span',{className:'g-hdr-title'},g.group_label));
-  const isC=g.type==='circuit',isS=g.type==='superset';
-  if(isC||isS){
-    hdr.appendChild(el('span',{className:'g-hdr-meta'},isC?`${g.sets_or_rounds} rounds`:`${g.sets_or_rounds} sets`));
-    card.appendChild(hdr);
-    (g.exercises||[]).forEach((ex,j)=>{
-      const isFlash=S.flashTarget&&S.flashTarget.type==='exercise'&&S.flashTarget.gIdx===gIdx&&S.flashTarget.eIdx===j;
-      const row=el('div',{className:'ex-row'+(isFlash?' flash':'')});
-      const tw=el('div',{className:'ex-thumb-wrap'});
-      const imgUrl=findImg(ex.name);
-      if(imgUrl){const i=el('img',{src:imgUrl,alt:ex.name,onClick:()=>{S.lightbox=imgUrl;render();}});i.onerror=()=>tw.style.background='var(--s2)';tw.appendChild(i);}
-      row.appendChild(tw);
-      const body=el('div',{className:'ex-body'});
-      body.appendChild(el('p',{className:'ex-name'},ex.name));
-      body.appendChild(el('p',{className:'ex-reps'},ex.reps));
-      const exData=findExercise(ex.name);
-      if(exData?.muscles?.length)body.appendChild(el('p',{className:'ex-muscles'},exData.muscles.join(' · ')));
-      if(ex.cue)body.appendChild(el('p',{className:'ex-cue'},ex.cue));
-      row.appendChild(body);
-      row.appendChild(el('button',{className:'kabob-btn',onClick:e=>{e.stopPropagation();S.kabob={gIdx,eIdx:j,type:'exercise'};render();}},'⋮'));
-      card.appendChild(row);
-    });
-    card.appendChild(el('div',{className:'rest-footer'},isC?`No rest between exercises · Rest ${g.rest_after_group} between rounds`:`${g.rest_between_exercises} between exercises · Rest ${g.rest_after_group} after superset`));
-  }else{
-    const kb=el('button',{className:'kabob-btn',style:{position:'relative',top:'0',right:'0'},onClick:e=>{e.stopPropagation();S.kabob={gIdx,eIdx:0,type:'group'};render();}});
-    kb.textContent='⋮';
-    hdr.appendChild(el('span',{className:'g-hdr-meta'},`Rest ${g.rest_between_sets} between sets`));
-    hdr.appendChild(kb);
-    card.appendChild(hdr);
-    const body=el('div',{style:{padding:'14px 16px'}});
-    const imgUrl=findImg(g.group_label);
-    if(imgUrl){const i=el('img',{src:imgUrl,alt:g.group_label,style:{width:'100%',maxHeight:'200px',objectFit:'cover',borderRadius:'var(--rsm)',marginBottom:'12px',cursor:'pointer'},onClick:()=>{S.lightbox=imgUrl;render();}});i.onerror=()=>i.style.display='none';body.appendChild(i);}
-    const tbl=el('div',{className:'set-table'});
-    (g.sets||[]).forEach(s=>{const c=el('div',{className:'set-cell'});c.appendChild(el('div',{className:'set-cell-lbl'},`Set ${s.set_num}`));c.appendChild(el('div',{className:'set-cell-rep'},s.reps));c.appendChild(el('div',{className:'set-cell-wt'},s.weight));tbl.appendChild(c);});
-    body.appendChild(tbl);
-    if(g.cue)body.appendChild(el('div',{className:'ex-cue',style:{marginTop:'12px'}},g.cue));
-    card.appendChild(body);
+// ── Root App ──
+function App() {
+  const [apiKey, setApiKey] = useState(() => localStorage.getItem(LS_KEY) || '');
+  const [showSettings, setShowSettings] = useState(false);
+  const [tab, setTab] = useState('library');
+  const [lib, setLib] = useState(() => loadLib());
+
+  if (!apiKey) {
+    return h('div', { id: 'app-inner' },
+      h('div', { className: 'setup' },
+        h('h2', null, 'Workout Agent'),
+        h('p', null, 'Enter your Anthropic API key to get started. It\'s stored locally in your browser and only used to call the Claude API.'),
+        h('div', { style: { width: '100%', maxWidth: '380px', display: 'flex', flexDirection: 'column', gap: '10px' } },
+          h('input', {
+            type: 'password', placeholder: 'sk-ant-…',
+            id: 'key-input', style: { width: '100%' }
+          }),
+          h('button', {
+            className: 'btn btn-primary',
+            style: { width: '100%' },
+            onClick: () => {
+              const val = document.getElementById('key-input').value.trim();
+              if (val) { localStorage.setItem(LS_KEY, val); setApiKey(val); }
+            }
+          }, 'Get started'),
+          h('p', { className: 'hint', style: { textAlign: 'center' } },
+            h('a', { href: 'https://console.anthropic.com/settings/keys', target: '_blank', style: { color: 'var(--accent)' } }, 'Get your API key →')
+          )
+        )
+      )
+    );
   }
-  return card;
+
+  return h('div', { id: 'app-inner' },
+    showSettings && h(SettingsModal, { apiKey, onSave: k => { setApiKey(k); setShowSettings(false); }, onClose: () => setShowSettings(false) }),
+
+    h('div', { className: 'header' },
+      h('h1', null, 'Workout Agent'),
+      h('button', { className: 'icon-btn', onClick: () => setShowSettings(true), title: 'Settings' }, '⚙')
+    ),
+
+    h('div', { className: 'tabs' },
+      h('button', { className: `tab-btn${tab === 'library' ? ' active' : ''}`, onClick: () => setTab('library') },
+        `Image Library${Object.keys(lib).length > 0 ? ` (${Object.keys(lib).length})` : ''}`
+      ),
+      h('button', { className: `tab-btn${tab === 'workout' ? ' active' : ''}`, onClick: () => setTab('workout') }, 'Workout')
+    ),
+
+    tab === 'library' && h(LibraryTab, { lib, onLibChange: setLib }),
+    tab === 'workout' && h(WorkoutTab, { lib })
+  );
 }
 
-function renderExercisesTab(){
-  const w=el('div',{});
-  const tabHdr=el('div',{className:'ex-tab-hdr'});
-  tabHdr.appendChild(el('h2',{},'Exercises'));
-  w.appendChild(tabHdr);
-
-  if(S.exLoading){w.appendChild(el('div',{className:'loading-state'},'Loading exercises…'));return w;}
-  if(S.exError){w.appendChild(el('div',{className:'err'},S.exError));return w;}
-  if(!S.exercises.length){w.appendChild(el('div',{className:'empty-state'},'No exercises found'));return w;}
-
-  const si=el('input',{className:'search-inp',placeholder:'Search exercises…',value:S.exSearch||'',onInput:e=>{S.exSearch=e.target.value;render();}});
-  w.appendChild(si);
-
-  const cats=[...new Set(S.exercises.map(e=>e.equipment))].sort();
-  const cf=el('div',{className:'cat-filter'});
-  cf.appendChild(el('button',{className:'cat-tag'+(!S.exCat?' on':''),onClick:()=>{S.exCat=null;render();}},'All'));
-  cats.forEach(c=>{
-    const cnt=S.exercises.filter(e=>e.equipment===c).length;
-    cf.appendChild(el('button',{className:'cat-tag'+(S.exCat===c?' on':''),onClick:()=>{S.exCat=S.exCat===c?null:c;render();}},`${c} · ${cnt}`));
-  });
-  w.appendChild(cf);
-
-  const filtered=S.exercises.filter(ex=>{
-    const ms=!S.exSearch||ex.name.toLowerCase().includes(S.exSearch.toLowerCase());
-    const mc=!S.exCat||ex.equipment===S.exCat;
-    return ms&&mc;
-  }).sort((a,b)=>a.name.localeCompare(b.name));
-
-  const list=el('div',{style:{marginTop:'8px'}});
-  filtered.forEach(ex=>{
-    const item=el('div',{className:'ex-list-item'});
-    const thumb=el('div',{className:'ex-list-thumb',onClick:()=>{S.lightbox=IMAGES_BASE+encodeURIComponent(ex.file);render();}});
-    const img=el('img',{src:IMAGES_BASE+encodeURIComponent(ex.file),alt:ex.name});
-    img.onerror=()=>{thumb.className='ex-list-thumb-ph';};
-    thumb.appendChild(img);
-    item.appendChild(thumb);
-    const info=el('div',{className:'ex-list-info'});
-    info.appendChild(el('div',{className:'ex-list-name'},ex.name));
-    const muscleTxt=ex.muscles.join(' · ');
-    const badge=el('span',{className:'ex-cat-badge'},ex.equipment);
-    info.appendChild(badge);
-    if(muscleTxt)info.appendChild(el('div',{style:{fontSize:'11px',color:'var(--t3)',marginTop:'3px'}},muscleTxt));
-    item.appendChild(info);
-    list.appendChild(item);
-  });
-  w.appendChild(list);
-  return w;
-}
-
-function renderSavedTab(){
-  const w=el('div',{});
-  w.appendChild(el('h1',{className:'page-title',style:{marginBottom:'1.5rem'}},'Saved'));
-  if(!S.saved.length){
-    w.appendChild(el('div',{className:'empty-state'},'No saved workouts yet — generate one and tap + Save workout'));
-    return w;
-  }
-  S.saved.forEach(s=>{
-    const card=el('div',{className:'saved-card'});
-    // Tappable area (name + tags + date)
-    const tap=el('div',{className:'saved-card-tap',onClick:()=>{
-      S.workout=JSON.parse(JSON.stringify(s.workout));
-      S.goal=s.goal;S.time=s.time;S.style=s.style;S.eq=[...s.eq];S.muscles=[...s.muscles];
-      S.workoutView=true;S.workoutSource='saved';S.viewingSavedId=s.id;S.woAnimated=false;
-      render();
-      window.scrollTo(0,0);
-      setTimeout(()=>{document.querySelectorAll('.group-card').forEach((c,i)=>setTimeout(()=>c.classList.add('show'),i*120));S.woAnimated=true;},50);
-    }});
-    tap.appendChild(el('div',{className:'saved-card-name'},s.name));
-    const tags=el('div',{className:'saved-card-tags'});
-    tags.appendChild(el('span',{className:'saved-card-tag'},GOAL_LABELS[s.goal]||s.goal));
-    tags.appendChild(el('span',{className:'saved-card-tag'},s.time));
-    tags.appendChild(el('span',{className:'saved-card-tag'},STYLES.find(st=>st.id===s.style)?.title||s.style));
-    tap.appendChild(tags);
-    tap.appendChild(el('div',{className:'saved-card-date'},'Saved '+s.savedAt));
-    card.appendChild(tap);
-    // Notes field
-    const notes=el('textarea',{className:'saved-card-notes',placeholder:'Add notes…',rows:'2',onClick:e=>e.stopPropagation()});
-    notes.value=s.notes||'';
-    notes.addEventListener('blur',e=>{updateNotes(s.id,e.target.value);});
-    notes.addEventListener('click',e=>e.stopPropagation());
-    notes.addEventListener('keydown',e=>e.stopPropagation());
-    card.appendChild(notes);
-    // Delete button
-    const isPending=S.pendingDeleteId===s.id;
-    const del=el('button',{className:'saved-card-del'+(isPending?' pending':''),onClick:e=>{e.stopPropagation();confirmDeleteSaved(s.id);}},isPending?'Confirm delete':'Delete');
-    card.appendChild(del);
-    w.appendChild(card);
-  });
-  return w;
-}
-
-render();
+ReactDOM.render(h(App), document.getElementById('app'));
 </script>
 </body>
 </html>
