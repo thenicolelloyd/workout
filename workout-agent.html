@@ -576,7 +576,7 @@ async function doGenerate(){
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
-        model:'claude-sonnet-4-6',max_tokens:1600,
+        model:'claude-haiku-4-5',max_tokens:1000,
         system:'Expert strength coach. Return ONLY a single valid JSON object. No markdown, no backticks. Start with { end with }. Exercise ordering rules: order_priority 1 (power_compound) goes first, priority 2 (primary compounds) second, priority 3 (accessory) third, priority 4 (isolation/finisher) last. Never place two exercises with the same movement_pattern back-to-back. Body weight exercises (role_hint: accessory or finisher) go in slots 3-4 of circuits, not slot 1.',
         messages:[{role:'user',content:`Generate a ${S.time} strength workout.\\nFocus: ${ml}${legsNote}\\nEquipment: ${eqList}\\nStyle: ${S.style}\\n${GOAL_TEXT[S.goal]}\\n\\n${exList}${recentHint}${circuitNote}\\n\\nRULES: Use EXACT exercise names from the library. Body Weight always allowed. Follow order_priority for exercise sequencing within groups.\\n\\n${SCHEMAS[S.style]}\\n\\nReturn: {"workout_name":"string","warmup":[{"name":"string","duration":"string"}],"groups":[],"cooldown":[{"name":"string","duration":"string"}]}`}]
       })
