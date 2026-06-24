@@ -119,12 +119,34 @@ input::placeholder{color:var(--t3)}
 .modal-btns{display:flex;gap:8px;justify-content:flex-end;margin-top:1rem}
 .empty-state{text-align:center;padding:3rem 1rem;color:var(--t3);font-size:14px}
 .loading-state{text-align:center;padding:3rem 1rem;color:var(--t2);font-size:14px}
+.save-btn{display:block;width:100%;margin-top:2rem;padding:16px;border-radius:var(--radius);border:.5px solid var(--b2);background:var(--s1);color:var(--t1);font-size:15px;font-weight:600;cursor:pointer;text-align:center}
+.save-btn.saved{color:var(--acc);border-color:var(--acc);background:rgba(174,193,83,.08);cursor:default}
+.saved-card{background:var(--s1);border:.5px solid var(--b1);border-radius:var(--radius);padding:16px;margin-bottom:12px;position:relative;transition:border-color .15s}
+.saved-card-tap{cursor:pointer}
+.saved-card-tap:active{border-color:var(--b2)}
+.saved-card-name{font-size:16px;font-weight:700;margin-bottom:8px;padding-right:36px}
+.saved-card-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.saved-card-tag{padding:3px 10px;border-radius:20px;border:.5px solid var(--b1);font-size:11px;font-weight:500;color:var(--t2)}
+.saved-card-date{font-size:11px;color:var(--t3);margin-bottom:10px}
+.saved-card-notes{width:100%;background:var(--s2);border:.5px solid var(--b1);border-radius:var(--rsm);color:var(--t1);font-size:13px;padding:10px 12px;outline:none;resize:none;font-family:inherit;line-height:1.5;min-height:38px;margin-top:4px}
+.saved-card-notes::placeholder{color:var(--t3)}
+.saved-card-notes:focus{border-color:var(--b2)}
+.saved-card-del{position:absolute;top:12px;right:12px;background:none;border:none;color:var(--red);font-size:13px;font-weight:600;cursor:pointer;padding:6px;opacity:.7}
+.saved-card-del:active{opacity:1}
+.saved-card-del.pending{opacity:1;font-weight:700;}
+.delete-btn{width:100%;padding:14px;border-radius:var(--rsm);border:.5px solid rgba(224,82,82,.3);background:rgba(224,82,82,.06);color:var(--red);font-size:14px;font-weight:600;cursor:pointer;margin-top:1.5rem;text-align:center}
+.delete-btn.pending{background:rgba(224,82,82,.15);border-color:rgba(224,82,82,.5);}
+@keyframes exFlash{0%{background:rgba(174,193,83,.25)}40%{background:rgba(174,193,83,.2)}100%{background:transparent}}
+@keyframes groupFlash{0%{border-color:var(--acc);box-shadow:0 0 0 1px var(--acc)}40%{border-color:var(--acc);box-shadow:0 0 0 1px var(--acc)}100%{border-color:var(--b1);box-shadow:none}}
+.ex-row.flash{animation:exFlash 1.6s ease-out forwards}
+.group-card.flash{animation:groupFlash 1.6s ease-out forwards}
 </style>
 </head>
 <body>
 <div id="app"></div>
 <script>
 const LS_KEY='wo_api_key';
+const LS_SAVED='wo_saved_v1';
 const EXERCISES_URL='https://raw.githubusercontent.com/thenicolelloyd/workout/main/exercises.json';
 const IMAGES_BASE='https://raw.githubusercontent.com/thenicolelloyd/workout/main/exercise-images/';
 
@@ -148,16 +170,18 @@ const SCHEMAS={
 };
 
 let S={
-  screen:'setup',tab:'workout',workoutView:false,
+  screen:'setup',tab:'workout',workoutView:false,workoutSource:'generate',
   apiKey:localStorage.getItem(LS_KEY)||'',
   goal:'gain_muscle',muscles:['full_body'],time:'30 min',style:'circuit',eq:['Band','Dumbbell'],
   loading:false,workout:null,error:null,
   exercises:[],exLoading:true,exError:null,
   exSearch:'',exCat:null,
+  saved:[],pendingDeleteId:null,
   lightbox:null,showSettings:false,settingsVal:'',
-  kabob:null,swapModal:null
+  kabob:null,swapModal:null,flashTarget:null,woAnimated:false
 };
 if(S.apiKey)S.screen='main';
+try{S.saved=JSON.parse(localStorage.getItem(LS_SAVED)||'[]');}catch(e){S.saved=[];}
 
 // Load exercises from GitHub
 async function loadExercises(){
@@ -214,10 +238,53 @@ function el(tag,props={},...kids){
   return e;
 }
 
-function doRemove(gIdx,eIdx,type){S.kabob=null;if(type==='exercise'){S.workout.groups[gIdx].exercises.splice(eIdx,1);if(!S.workout.groups[gIdx].exercises.length)S.workout.groups.splice(gIdx,1);}else{S.workout.groups.splice(gIdx,1);}render();}
-function doMove(gIdx,eIdx,type,dir){S.kabob=null;if(type==='exercise'){const exs=S.workout.groups[gIdx].exercises;const ni=eIdx+dir;if(ni<0||ni>=exs.length)return render();[exs[ni],exs[eIdx]]=[exs[eIdx],exs[ni]];}else{const gs=S.workout.groups;const ni=gIdx+dir;if(ni<0||ni>=gs.length)return render();[gs[ni],gs[gIdx]]=[gs[gIdx],gs[ni]];}render();}
+function saveCurrent(){
+  const id=Date.now();
+  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const d=new Date();
+  const dateStr=months[d.getMonth()]+' '+d.getDate();
+  S.saved.unshift({id,name:S.workout.workout_name,savedAt:dateStr,goal:S.goal,time:S.time,style:S.style,eq:[...S.eq],muscles:[...S.muscles],notes:'',workout:JSON.parse(JSON.stringify(S.workout))});
+  localStorage.setItem(LS_SAVED,JSON.stringify(S.saved));
+}
+function deleteSaved(id){S.saved=S.saved.filter(s=>s.id!==id);localStorage.setItem(LS_SAVED,JSON.stringify(S.saved));}
+function persistSavedEdits(){
+  if(S.workoutSource==='saved'&&S.viewingSavedId){
+    const idx=S.saved.findIndex(s=>s.id===S.viewingSavedId);
+    if(idx>=0){S.saved[idx].workout=JSON.parse(JSON.stringify(S.workout));localStorage.setItem(LS_SAVED,JSON.stringify(S.saved));}
+  }
+}
+function isSaved(){return S.saved.some(s=>s.name===S.workout?.workout_name);}
+
+function updateNotes(id,notes){const idx=S.saved.findIndex(s=>s.id===id);if(idx>=0){S.saved[idx].notes=notes;localStorage.setItem(LS_SAVED,JSON.stringify(S.saved));}}
+function confirmDeleteSaved(id){
+  if(S.pendingDeleteId===id){
+    deleteSaved(id);S.pendingDeleteId=null;
+    if(S.workoutView){S.workoutView=false;S.tab='saved';}
+    render();
+  }else{
+    S.pendingDeleteId=id;render();
+    setTimeout(()=>{if(S.pendingDeleteId===id){S.pendingDeleteId=null;render();}},3000);
+  }
+}
+function doRemove(gIdx,eIdx,type){S.kabob=null;if(type==='exercise'){S.workout.groups[gIdx].exercises.splice(eIdx,1);if(!S.workout.groups[gIdx].exercises.length)S.workout.groups.splice(gIdx,1);}else{S.workout.groups.splice(gIdx,1);}persistSavedEdits();render();}
+function doMove(gIdx,eIdx,type,dir){
+  S.kabob=null;
+  if(type==='exercise'){
+    const exs=S.workout.groups[gIdx].exercises;
+    const ni=eIdx+dir;if(ni<0||ni>=exs.length)return render();
+    [exs[ni],exs[eIdx]]=[exs[eIdx],exs[ni]];
+    S.flashTarget={gIdx,eIdx:ni,type:'exercise'};
+  }else{
+    const gs=S.workout.groups;
+    const ni=gIdx+dir;if(ni<0||ni>=gs.length)return render();
+    [gs[ni],gs[gIdx]]=[gs[gIdx],gs[ni]];
+    S.flashTarget={gIdx:ni,type:'group'};
+  }
+  render();
+  setTimeout(()=>{S.flashTarget=null;persistSavedEdits();},1700);
+}
 function doSwap(gIdx,eIdx,type,name){S.kabob=null;S.swapModal={gIdx,eIdx,type,name,candidates:getSwapCandidates(name)};render();}
-function applySwap(newName){const{gIdx,eIdx,type}=S.swapModal;S.swapModal=null;if(type==='exercise'){const ex=S.workout.groups[gIdx].exercises[eIdx];S.workout.groups[gIdx].exercises[eIdx]={...ex,name:newName};}else{S.workout.groups[gIdx].group_label=newName;}render();}
+function applySwap(newName){const{gIdx,eIdx,type}=S.swapModal;S.swapModal=null;if(type==='exercise'){const ex=S.workout.groups[gIdx].exercises[eIdx];S.workout.groups[gIdx].exercises[eIdx]={...ex,name:newName};}else{S.workout.groups[gIdx].group_label=newName;}persistSavedEdits();render();}
 
 function render(){
   const app=document.getElementById('app');app.innerHTML='';
@@ -226,9 +293,11 @@ function render(){
   if(S.kabob)app.appendChild(renderKabobSheet());
   if(S.swapModal)app.appendChild(renderSwapModal());
   if(S.screen==='setup'){app.appendChild(renderSetup());return;}
-  if(S.workoutView){app.appendChild(renderWorkoutPage());return;}
+  if(S.workoutView){app.appendChild(renderWorkoutPage());if(S.woAnimated){document.querySelectorAll('.group-card').forEach(c=>c.classList.add('show'));}return;}
   app.appendChild(renderHdr());app.appendChild(renderTabs());
-  app.appendChild(S.tab==='workout'?renderWorkoutForm():renderExercisesTab());
+  if(S.tab==='workout')app.appendChild(renderWorkoutForm());
+  else if(S.tab==='exercises')app.appendChild(renderExercisesTab());
+  else app.appendChild(renderSavedTab());
 }
 
 function renderSetup(){
@@ -253,7 +322,8 @@ function renderHdr(){
 function renderTabs(){
   const t=el('div',{className:'tabs'});
   const lc=S.exercises.length;
-  [['workout','Workout'],['exercises',lc?`Exercises (${lc})`:'Exercises']].forEach(([id,lbl])=>{
+  const sc=S.saved.length;
+  [['workout','Workout'],['exercises',lc?`Exercises (${lc})`:'Exercises'],['saved',sc?`Saved (${sc})`:'Saved']].forEach(([id,lbl])=>{
     t.appendChild(el('button',{className:'tab'+(S.tab===id?' on':''),onClick:()=>{S.tab=id;render();}},lbl));
   });
   return t;
@@ -407,8 +477,8 @@ async function doGenerate(){
     const clean=raw.replace(/^```[\w]*\n?/,'').replace(/\n?```$/,'').trim();
     const parsed=JSON.parse(clean);
     if(!parsed.groups||!Array.isArray(parsed.groups))throw new Error('Invalid structure.');
-    S.workout=parsed;S.loading=false;S.workoutView=true;render();
-    setTimeout(()=>{document.querySelectorAll('.group-card').forEach((c,i)=>setTimeout(()=>c.classList.add('show'),i*120));},50);
+    S.workout=parsed;S.loading=false;S.workoutView=true;S.woAnimated=false;S.workoutSource='generate';S.viewingSavedId=null;render();
+    setTimeout(()=>{document.querySelectorAll('.group-card').forEach((c,i)=>setTimeout(()=>c.classList.add('show'),i*120));S.woAnimated=true;},50);
   }catch(e){S.error=`Could not generate: ${e.message}`;S.loading=false;render();}
 }
 
@@ -416,7 +486,11 @@ function renderWorkoutPage(){
   const w=el('div',{});
   const hdr=el('div',{className:'hdr'});
   const left=el('div',{className:'hdr-left'});
-  const back=el('button',{className:'back-btn',onClick:()=>{S.workoutView=false;render();}});
+  const back=el('button',{className:'back-btn',onClick:()=>{
+    S.workoutView=false;
+    if(S.workoutSource==='saved')S.tab='saved';
+    render();
+  }});
   back.innerHTML='← Back';left.appendChild(back);
   hdr.appendChild(left);
   hdr.appendChild(el('button',{className:'icon-btn',onClick:()=>{S.showSettings=true;S.settingsVal=S.apiKey;render();}},'⚙'));
@@ -443,11 +517,23 @@ function renderWorkoutPage(){
     wo.cooldown.forEach(x=>{const row=el('div',{className:'wu-item'});row.appendChild(el('span',{},x.name));row.appendChild(el('span',{className:'wu-dur'},x.duration));cd.appendChild(row);});
     w.appendChild(cd);
   }
+  // Save button — only show when viewing a freshly generated workout
+  if(S.workoutSource==='generate'){
+    const already=isSaved();
+    const saveBtn=el('button',{className:'save-btn'+(already?' saved':''),onClick:()=>{if(!already){saveCurrent();render();}}},already?'✓ Saved':'+ Save workout');
+    w.appendChild(saveBtn);
+  }
+  // Delete button — when viewing a saved workout
+  if(S.workoutSource==='saved'&&S.viewingSavedId){
+    const isPending=S.pendingDeleteId===S.viewingSavedId;
+    w.appendChild(el('button',{className:'delete-btn'+(isPending?' pending':''),onClick:()=>confirmDeleteSaved(S.viewingSavedId)},isPending?'Tap again to confirm delete':'Delete workout'));
+  }
   return w;
 }
 
 function renderGroup(g,gIdx){
-  const card=el('div',{className:'group-card'});
+  const isGroupFlash=S.flashTarget&&S.flashTarget.type==='group'&&S.flashTarget.gIdx===gIdx;
+  const card=el('div',{className:'group-card'+(isGroupFlash?' flash':'')});
   const hdr=el('div',{className:'g-hdr'});
   hdr.appendChild(el('span',{className:'g-hdr-title'},g.group_label));
   const isC=g.type==='circuit',isS=g.type==='superset';
@@ -455,7 +541,8 @@ function renderGroup(g,gIdx){
     hdr.appendChild(el('span',{className:'g-hdr-meta'},isC?`${g.sets_or_rounds} rounds`:`${g.sets_or_rounds} sets`));
     card.appendChild(hdr);
     (g.exercises||[]).forEach((ex,j)=>{
-      const row=el('div',{className:'ex-row'});
+      const isFlash=S.flashTarget&&S.flashTarget.type==='exercise'&&S.flashTarget.gIdx===gIdx&&S.flashTarget.eIdx===j;
+      const row=el('div',{className:'ex-row'+(isFlash?' flash':'')});
       const tw=el('div',{className:'ex-thumb-wrap'});
       const imgUrl=findImg(ex.name);
       if(imgUrl){const i=el('img',{src:imgUrl,alt:ex.name,onClick:()=>{S.lightbox=imgUrl;render();}});i.onerror=()=>tw.style.background='var(--s2)';tw.appendChild(i);}
@@ -533,6 +620,47 @@ function renderExercisesTab(){
     list.appendChild(item);
   });
   w.appendChild(list);
+  return w;
+}
+
+function renderSavedTab(){
+  const w=el('div',{});
+  w.appendChild(el('h1',{className:'page-title',style:{marginBottom:'1.5rem'}},'Saved'));
+  if(!S.saved.length){
+    w.appendChild(el('div',{className:'empty-state'},'No saved workouts yet — generate one and tap + Save workout'));
+    return w;
+  }
+  S.saved.forEach(s=>{
+    const card=el('div',{className:'saved-card'});
+    // Tappable area (name + tags + date)
+    const tap=el('div',{className:'saved-card-tap',onClick:()=>{
+      S.workout=JSON.parse(JSON.stringify(s.workout));
+      S.goal=s.goal;S.time=s.time;S.style=s.style;S.eq=[...s.eq];S.muscles=[...s.muscles];
+      S.workoutView=true;S.workoutSource='saved';S.viewingSavedId=s.id;S.woAnimated=false;
+      render();
+      setTimeout(()=>{document.querySelectorAll('.group-card').forEach((c,i)=>setTimeout(()=>c.classList.add('show'),i*120));S.woAnimated=true;},50);
+    }});
+    tap.appendChild(el('div',{className:'saved-card-name'},s.name));
+    const tags=el('div',{className:'saved-card-tags'});
+    tags.appendChild(el('span',{className:'saved-card-tag'},GOAL_LABELS[s.goal]||s.goal));
+    tags.appendChild(el('span',{className:'saved-card-tag'},s.time));
+    tags.appendChild(el('span',{className:'saved-card-tag'},STYLES.find(st=>st.id===s.style)?.title||s.style));
+    tap.appendChild(tags);
+    tap.appendChild(el('div',{className:'saved-card-date'},'Saved '+s.savedAt));
+    card.appendChild(tap);
+    // Notes field
+    const notes=el('textarea',{className:'saved-card-notes',placeholder:'Add notes…',rows:'2',onClick:e=>e.stopPropagation()});
+    notes.value=s.notes||'';
+    notes.addEventListener('blur',e=>{updateNotes(s.id,e.target.value);});
+    notes.addEventListener('click',e=>e.stopPropagation());
+    notes.addEventListener('keydown',e=>e.stopPropagation());
+    card.appendChild(notes);
+    // Delete button
+    const isPending=S.pendingDeleteId===s.id;
+    const del=el('button',{className:'saved-card-del'+(isPending?' pending':''),onClick:e=>{e.stopPropagation();confirmDeleteSaved(s.id);}},isPending?'Confirm delete':'Delete');
+    card.appendChild(del);
+    w.appendChild(card);
+  });
   return w;
 }
 
