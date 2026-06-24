@@ -6,6 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Workout">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <title>Workout Agent</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -152,6 +153,54 @@ const LS_SAVED='wo_saved_v1';
 const EXERCISES_URL='https://raw.githubusercontent.com/thenicolelloyd/workout/main/exercises.json';
 const IMAGES_BASE='https://raw.githubusercontent.com/thenicolelloyd/workout/main/exercise-images/';
 
+// Supabase client
+const _supa = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ── Supabase helpers ──────────────────────────────────────────────────────────
+
+async function fetchRecentHistory(focus) {
+  try {
+    const { data, error } = await _supa
+      .from('workout_history')
+      .select('exercises, created_at')
+      .eq('focus', focus)
+      .order('created_at', { ascending: false })
+      .limit(3);
+    if (error) return [];
+    return data || [];
+  } catch(e) { return []; }
+}
+
+async function saveWorkoutHistory(workoutId) {
+  try {
+    const focus = S.muscles.includes('full_body') ? 'full_body' : S.muscles.join('_');
+    const allExercises = (S.workout.groups || []).flatMap(g =>
+      g.exercises ? g.exercises.map(e => e.name) : [g.group_label]
+    );
+    await _supa.from('workout_history').insert({
+      id: workoutId,
+      focus: focus,
+      style: S.style,
+      duration: S.time,
+      equipment: S.eq,
+      exercises: allExercises,
+      workout_name: S.workout.workout_name
+    });
+  } catch(e) { console.warn('History save failed:', e); }
+}
+
+async function logSwap(originalExercise, swappedFor) {
+  try {
+    const workoutId = S.currentWorkoutId;
+    if (!workoutId) return;
+    await _supa.from('exercise_swaps').insert({
+      workout_id: workoutId,
+      original_exercise: originalExercise,
+      swapped_for: swappedFor
+    });
+  } catch(e) { console.warn('Swap log failed:', e); }
+}
+
 const EQ_GROUPS=[
   {id:'Band',label:'Bands',cats:['Band']},
   {id:'Dumbbell',label:'Dumbbells',cats:['Dumbbell']},
@@ -180,7 +229,7 @@ let S={
   exSearch:'',exCat:null,
   saved:[],pendingDeleteId:null,
   lightbox:null,showSettings:false,settingsVal:'',
-  kabob:null,swapModal:null,flashTarget:null,woAnimated:false
+  kabob:null,swapModal:null,flashTarget:null,woAnimated:false,currentWorkoutId:null
 };
 if(S.apiKey)S.screen='main';
 try{S.saved=JSON.parse(localStorage.getItem(LS_SAVED)||'[]');}catch(e){S.saved=[];}
@@ -219,13 +268,47 @@ function findImg(name){
 
 function getSwapCandidates(exerciseName){
   const ex=findExercise(exerciseName);
-  const primaryMuscle=ex?ex.muscles[0]:null;
   const norm=s=>s.toLowerCase().replace(/[^a-z0-9]/g,' ').replace(/\s+/g,' ').trim();
   const n=norm(exerciseName);
-  let candidates=S.exercises.filter(e=>norm(e.name)!==n&&e.muscles[0]===primaryMuscle);
-  if(candidates.length<3)candidates=S.exercises.filter(e=>norm(e.name)!==n&&e.muscles.some(m=>ex&&ex.muscles.includes(m)));
-  if(candidates.length<3)candidates=S.exercises.filter(e=>norm(e.name)!==n);
-  return candidates.sort((a,b)=>a.name.localeCompare(b.name));
+  const allowed=getFiltered().map(e=>norm(e.name));
+
+  // Tier 1: same substitution_group (closest swap)
+  let t1=[];
+  if(ex?.substitution_group){
+    t1=S.exercises.filter(e=>
+      norm(e.name)!==n &&
+      allowed.includes(norm(e.name)) &&
+      e.substitution_group===ex.substitution_group
+    );
+  }
+
+  // Tier 2: same movement_pattern, different equipment
+  let t2=[];
+  if(ex?.movement_pattern){
+    t2=S.exercises.filter(e=>
+      norm(e.name)!==n &&
+      allowed.includes(norm(e.name)) &&
+      e.movement_pattern===ex.movement_pattern &&
+      !t1.find(t=>norm(t.name)===norm(e.name))
+    );
+  }
+
+  // Tier 3: same primary muscle, different pattern (last resort)
+  let t3=S.exercises.filter(e=>
+    norm(e.name)!==n &&
+    allowed.includes(norm(e.name)) &&
+    e.muscles[0]===ex?.muscles[0] &&
+    !t1.find(t=>norm(t.name)===norm(e.name)) &&
+    !t2.find(t=>norm(t.name)===norm(e.name))
+  );
+
+  // Tag each candidate with its tier for UI labeling
+  const tag=(arr,tier,note)=>arr.map(e=>({...e,_tier:tier,_note:note}));
+  return [
+    ...tag(t1,1,'Similar exercise'),
+    ...tag(t2,2,'Same pattern'),
+    ...tag(t3,3,'Same muscle group')
+  ];
 }
 
 function el(tag,props={},...kids){
@@ -286,7 +369,18 @@ function doMove(gIdx,eIdx,type,dir){
   setTimeout(()=>{S.flashTarget=null;persistSavedEdits();},1700);
 }
 function doSwap(gIdx,eIdx,type,name){S.kabob=null;S.swapModal={gIdx,eIdx,type,name,candidates:getSwapCandidates(name)};render();}
-function applySwap(newName){const{gIdx,eIdx,type}=S.swapModal;S.swapModal=null;if(type==='exercise'){const ex=S.workout.groups[gIdx].exercises[eIdx];S.workout.groups[gIdx].exercises[eIdx]={...ex,name:newName};}else{S.workout.groups[gIdx].group_label=newName;}persistSavedEdits();render();}
+function applySwap(newName){
+  const{gIdx,eIdx,type,name:origName}=S.swapModal;
+  S.swapModal=null;
+  if(type==='exercise'){
+    const ex=S.workout.groups[gIdx].exercises[eIdx];
+    S.workout.groups[gIdx].exercises[eIdx]={...ex,name:newName};
+    logSwap(origName, newName);
+  }else{
+    S.workout.groups[gIdx].group_label=newName;
+  }
+  persistSavedEdits();render();
+}
 
 function render(){
   const app=document.getElementById('app');app.innerHTML='';
@@ -386,7 +480,7 @@ function renderSwapModal(){
       item.appendChild(img);
       const info=el('div',{});
       info.appendChild(el('div',{className:'swap-name'},ex.name));
-      info.appendChild(el('div',{className:'swap-cat'},ex.equipment+' · '+ex.muscles[0]));
+      info.appendChild(el('div',{className:'swap-cat'},ex.equipment+' · '+ex.muscles[0]+(ex._note?' · '+ex._note:'')));
       item.appendChild(info);
       list.appendChild(item);
     });
@@ -458,9 +552,23 @@ async function doGenerate(){
   if(!S.apiKey){S.error='No API key — tap ⚙ to add it.';render();return;}
   S.loading=true;S.workout=null;S.error=null;render();
   const filtered=getFiltered();
+
+  // Fetch recent history for this focus to avoid repeats
+  const focusKey=S.muscles.includes('full_body')?'full_body':S.muscles.join('_');
+  const recentHistory=await fetchRecentHistory(focusKey);
+  const recentExercises=[...new Set(recentHistory.flatMap(h=>h.exercises||[]))];
+  const recentHint=recentExercises.length>0
+    ?`\n\nAVOID these exercises used in recent sessions (use different ones): ${recentExercises.join(', ')}`
+    :'';
+
+  // Annotate library with movement patterns for smarter ordering
   const exList=filtered.length>0
-    ?`EXERCISE LIBRARY — use ONLY these exact names:\n${filtered.map(e=>e.name).join(', ')}`
+    ?`EXERCISE LIBRARY — use ONLY these exact names:\n${filtered.map(e=>{
+        const meta=e.movement_pattern?` [${e.movement_pattern},pri:${e.order_priority},${e.role_hint}]`:'';
+        return e.name+meta;
+      }).join(', ')}`
     :'No library loaded. Use expert knowledge.';
+
   const ml=S.muscles.includes('full_body')?'Full Body':S.muscles.map(id=>MUSCLES.find(m=>m.id===id)?.label||id).join(', ');
   const eqList=EQ_GROUPS.filter(g=>S.eq.includes(g.id)).map(g=>g.label).join(', ')||'Body Weight only';
   try{
@@ -469,7 +577,7 @@ async function doGenerate(){
       headers:{'Content-Type':'application/json','x-api-key':S.apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
       body:JSON.stringify({
         model:'claude-sonnet-4-6',max_tokens:1600,
-        system:'Expert strength coach. Return ONLY a single valid JSON object. No markdown, no backticks. Start with { end with }.',
+        system:'Expert strength coach. Return ONLY a single valid JSON object. No markdown, no backticks. Start with { end with }. Exercise ordering rules: order_priority 1 (power_compound) goes first, priority 2 (primary compounds) second, priority 3 (accessory) third, priority 4 (isolation/finisher) last. Never place two exercises with the same movement_pattern back-to-back. Body weight exercises (role_hint: accessory or finisher) go in slots 3-4 of circuits, not slot 1.',
         messages:[{role:'user',content:`Generate a ${S.time} strength workout.\nFocus: ${ml}\nEquipment: ${eqList}\nStyle: ${S.style}\n${GOAL_TEXT[S.goal]}\n\n${exList}\n\nRULES: Use EXACT exercise names from the library. Body Weight always allowed.\n\n${SCHEMAS[S.style]}\n\nReturn: {"workout_name":"string","warmup":[{"name":"string","duration":"string"}],"groups":[],"cooldown":[{"name":"string","duration":"string"}]}`}]
       })
     });
@@ -479,7 +587,10 @@ async function doGenerate(){
     const clean=raw.replace(/^```[\w]*\n?/,'').replace(/\n?```$/,'').trim();
     const parsed=JSON.parse(clean);
     if(!parsed.groups||!Array.isArray(parsed.groups))throw new Error('Invalid structure.');
+    const newWorkoutId=crypto.randomUUID();
+    S.currentWorkoutId=newWorkoutId;
     S.workout=parsed;S.loading=false;S.workoutView=true;S.woAnimated=false;S.workoutSource='generate';S.viewingSavedId=null;render();
+    saveWorkoutHistory(newWorkoutId);
     setTimeout(()=>{document.querySelectorAll('.group-card').forEach((c,i)=>setTimeout(()=>c.classList.add('show'),i*120));S.woAnimated=true;},50);
   }catch(e){S.error=`Could not generate: ${e.message}`;S.loading=false;render();}
 }
