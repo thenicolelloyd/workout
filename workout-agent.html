@@ -80,6 +80,7 @@ input::placeholder{color:var(--t3)}
 .ex-name{font-size:15px;font-weight:700;margin-bottom:3px}
 .ex-reps{font-size:13px;font-weight:600;color:var(--acc);margin-bottom:2px}
 .ex-cue{font-size:13px;color:var(--t2);line-height:1.5;margin-top:4px}
+.ex-muscles{font-size:11px;color:var(--t3);margin-top:2px;letter-spacing:.02em}
 .kabob-btn{position:absolute;top:10px;right:10px;background:none;border:none;cursor:pointer;color:var(--t3);font-size:20px;min-width:36px;min-height:36px;display:flex;align-items:center;justify-content:center;border-radius:var(--rsm);padding:4px;line-height:1}
 .rest-footer{padding:12px 16px;font-size:13px;color:var(--t3)}
 .set-table{display:flex;overflow:hidden;border-radius:var(--rsm);border:.5px solid var(--b1);margin-top:12px}
@@ -641,6 +642,8 @@ function renderGroup(g,gIdx){
       const body=el('div',{className:'ex-body'});
       body.appendChild(el('p',{className:'ex-name'},ex.name));
       body.appendChild(el('p',{className:'ex-reps'},ex.reps));
+      const exData=findExercise(ex.name);
+      if(exData?.muscles?.length)body.appendChild(el('p',{className:'ex-muscles'},exData.muscles.join(' · ')));
       if(ex.cue)body.appendChild(el('p',{className:'ex-cue'},ex.cue));
       row.appendChild(body);
       row.appendChild(el('button',{className:'kabob-btn',onClick:e=>{e.stopPropagation();S.kabob={gIdx,eIdx:j,type:'exercise'};render();}},'⋮'));
