@@ -65,6 +65,8 @@ input::placeholder{color:var(--t3)}
 .wo-title{font-size:clamp(28px,8vw,38px);font-weight:900;line-height:1.0;text-transform:uppercase;letter-spacing:-0.02em;margin-bottom:14px}
 .wo-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:1.5rem}
 .wo-tag{padding:5px 12px;border-radius:20px;border:.5px solid var(--b2);background:var(--s1);font-size:12px;font-weight:500;color:var(--t2)}
+.wo-tag-goal{padding:5px 12px;border-radius:20px;border:.5px solid var(--acc);background:rgba(174,193,83,.1);font-size:12px;font-weight:600;color:var(--acc);cursor:pointer;display:flex;align-items:center;gap:5px}
+.wo-tag-goal:active{opacity:.75}
 .sec-lbl{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);margin:1.25rem 0 10px}
 .wu-item{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:.5px solid var(--b1);font-size:15px}
 .wu-item:last-child{border-bottom:none}
@@ -212,8 +214,9 @@ const EQ_GROUPS=[
 const MUSCLES=[{id:'full_body',label:'Full Body'},{id:'back_chest',label:'Back & Chest'},{id:'shoulders',label:'Shoulders'},{id:'arms',label:'Arms'},{id:'core',label:'Core'},{id:'legs',label:'Legs'}];
 const TIMES=['20 min','30 min','45 min','60 min'];
 const STYLES=[{id:'circuit',title:'Circuit',desc:'3-4 exercises back-to-back, rest between rounds'},{id:'superset',title:'Superset',desc:'Paired exercises back-to-back, rest after each pair'},{id:'progressive',title:'Progressive overload',desc:'Weight climbs each set, reps drop'},{id:'pyramid',title:'Pyramid',desc:'Weight climbs then descends'}];
-const GOAL_TEXT={lose_fat:'GOAL — Fat loss: high reps (15-20), short rest (30-45s), maximize heart rate and calorie burn.',recomp:'GOAL — Fat loss + muscle: moderate reps (10-15), moderate rest (45-60s), balance conditioning with hypertrophy.',gain_muscle:'GOAL — Muscle gain: moderate-heavy reps (8-12), rest 60-90s, prioritize progressive overload.'};
+const GOAL_TEXT={lose_fat:'GOAL — Fat loss: reps 10-15, short rest (30-45s), maximize heart rate and calorie burn.',recomp:'GOAL — Fat loss + muscle: reps 8-12, moderate rest (45-60s), balance conditioning with hypertrophy.',gain_muscle:'GOAL — Muscle gain: reps 6-8, rest 60-90s, prioritize strength and progressive overload.'};
 const GOAL_LABELS={lose_fat:'Lose fat',recomp:'Lose fat + build',gain_muscle:'Build muscle'};
+const GOAL_REPS={lose_fat:{lo:10,hi:15},recomp:{lo:8,hi:12},gain_muscle:{lo:6,hi:8}};
 const SCHEMAS={
   circuit:`Each group: {"type":"circuit","group_label":"Circuit 1","sets_or_rounds":3,"rest_between_exercises":"none","rest_after_group":"60s","exercises":[{"name":"Exercise Name","reps":"12","cue":"coaching tip"}]}. MAX 4 exercises per circuit. 2 circuits if time allows.`,
   superset:`Each group: {"type":"superset","group_label":"Superset A","sets_or_rounds":3,"rest_between_exercises":"10s","rest_after_group":"45s","exercises":[{"name":"Ex One","reps":"12","cue":"tip"},{"name":"Ex Two","reps":"12","cue":"tip"}]}. EXACTLY 2 exercises per superset (it's a pair). 3 rounds per superset. Follow the superset count for the workout duration.`,
@@ -228,7 +231,7 @@ let S={
   exercises:[],exLoading:true,exError:null,
   exSearch:'',exCat:null,
   saved:[],pendingDeleteId:null,
-  lightbox:null,
+  lightbox:null,goalSheet:false,
   kabob:null,swapModal:null,flashTarget:null,woAnimated:false,currentWorkoutId:null
 };
 S.screen='main';
@@ -382,10 +385,58 @@ function applySwap(newName){
   persistSavedEdits();render();
 }
 
+function applyGoal(goalId){
+  S.goal=goalId;
+  S.goalSheet=false;
+  const{lo,hi}=GOAL_REPS[goalId];
+  // Update reps on all exercises in the workout
+  (S.workout.groups||[]).forEach(g=>{
+    if(g.exercises){
+      g.exercises.forEach(ex=>{
+        // Only update if reps looks like a number (not "30s" or "AMRAP")
+        if(/^\d/.test(ex.reps||'')){
+          ex.reps=`${lo}-${hi}`;
+        }
+      });
+    }else if(g.sets){
+      // Progressive/pyramid: update each set's reps proportionally
+      const totalSets=g.sets.length;
+      g.sets.forEach((s,i)=>{
+        if(/^\d/.test(s.reps||'')){
+          // Spread reps across the range across sets
+          const frac=totalSets>1?i/(totalSets-1):0.5;
+          const rep=Math.round(hi-(frac*(hi-lo)));
+          s.reps=String(rep);
+        }
+      });
+    }
+  });
+  persistSavedEdits();
+  render();
+}
+
+function renderGoalSheet(){
+  const ov=el('div',{className:'sheet-overlay',onClick:e=>{if(e.target===ov){S.goalSheet=false;render();}}});
+  const sheet=el('div',{className:'sheet'});
+  sheet.appendChild(el('div',{className:'sheet-title'},'Training goal'));
+  [['lose_fat','Lose fat','10–15 reps'],['recomp','Lose fat + build','8–12 reps'],['gain_muscle','Build muscle','6–8 reps']].forEach(([id,lbl,reps])=>{
+    const b=el('button',{className:'sheet-action',onClick:()=>applyGoal(id)});
+    b.appendChild(el('span',{className:'sheet-action-icon'},S.goal===id?'✓':''));
+    const info=el('div',{});
+    info.appendChild(el('div',{},lbl));
+    info.appendChild(el('div',{style:{fontSize:'12px',color:'var(--t3)',marginTop:'2px'}},reps));
+    b.appendChild(info);
+    sheet.appendChild(b);
+  });
+  sheet.appendChild(el('button',{className:'sheet-cancel',onClick:()=>{S.goalSheet=false;render();}},'Cancel'));
+  ov.appendChild(sheet);return ov;
+}
+
 function render(){
   const app=document.getElementById('app');app.innerHTML='';
   if(S.lightbox){const lb=el('div',{className:'lightbox',onClick:()=>{S.lightbox=null;render();}});lb.appendChild(el('img',{src:S.lightbox,alt:'',onClick:e=>e.stopPropagation()}));app.appendChild(lb);}
 
+  if(S.goalSheet)app.appendChild(renderGoalSheet());
   if(S.kabob)app.appendChild(renderKabobSheet());
   if(S.swapModal)app.appendChild(renderSwapModal());
   if(S.screen==='setup'){app.appendChild(renderSetup());return;}
@@ -474,13 +525,6 @@ function renderSwapModal(){
 function renderWorkoutForm(){
   const w=el('div',{});
   w.appendChild(el('h1',{className:'page-title'},'Build Your\nSession'));
-
-  const gf=el('div',{className:'field'});gf.appendChild(el('span',{className:'flbl'},'Goal'));
-  const gs=el('div',{className:'seg'});
-  [['lose_fat','Lose fat'],['recomp','Lose fat + build'],['gain_muscle','Build muscle']].forEach(([id,lbl])=>{
-    gs.appendChild(el('button',{className:'seg-btn'+(S.goal===id?' on':''),onClick:()=>{S.goal=id;render();}},lbl));
-  });
-  gf.appendChild(gs);w.appendChild(gf);
 
   const ff=el('div',{className:'field'});ff.appendChild(el('span',{className:'flbl'},'Focus'));
   const fp=el('div',{className:'pills'});
@@ -623,7 +667,10 @@ function renderWorkoutPage(){
   w.appendChild(el('p',{className:'session-eyebrow'},'Your Session'));
   w.appendChild(el('h2',{className:'wo-title'},wo.workout_name));
   const tags=el('div',{className:'wo-tags'});
-  tags.appendChild(el('span',{className:'wo-tag'},GOAL_LABELS[S.goal]||S.goal));
+  const goalPill=el('div',{className:'wo-tag-goal',onClick:()=>{S.goalSheet=true;render();}});
+  goalPill.appendChild(el('span',{},GOAL_LABELS[S.goal]||S.goal));
+  goalPill.appendChild(el('span',{style:{fontSize:'10px',opacity:'.7'}},'›'));
+  tags.appendChild(goalPill);
   tags.appendChild(el('span',{className:'wo-tag'},S.time));
   tags.appendChild(el('span',{className:'wo-tag'},STYLES.find(s=>s.id===S.style)?.title||S.style));
   w.appendChild(tags);
