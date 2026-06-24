@@ -146,7 +146,6 @@ input::placeholder{color:var(--t3)}
 <body>
 <div id="app"></div>
 <script>
-const LS_KEY='wo_api_key';
 const SUPABASE_URL='https://aohiqwpuikueisshddos.supabase.co';
 const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFvaGlxd3B1aWt1ZWlzc2hkZG9zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3NzkxMDIsImV4cCI6MjA2NjM1NTEwMn0.YkLNMHyIi9QLNEbIYEDrPJiGNj0oOLBHgFJGqYlHwdY';
 const LS_SAVED='wo_saved_v1';
@@ -222,13 +221,12 @@ const SCHEMAS={
 
 let S={
   screen:'setup',tab:'workout',workoutView:false,workoutSource:'generate',
-  apiKey:localStorage.getItem(LS_KEY)||'',
   goal:'gain_muscle',muscles:['full_body'],time:'30 min',style:'circuit',eq:['Band','Dumbbell'],
   loading:false,workout:null,error:null,
   exercises:[],exLoading:true,exError:null,
   exSearch:'',exCat:null,
   saved:[],pendingDeleteId:null,
-  lightbox:null,showSettings:false,settingsVal:'',
+  lightbox:null,
   kabob:null,swapModal:null,flashTarget:null,woAnimated:false,currentWorkoutId:null
 };
 if(S.apiKey)S.screen='main';
@@ -541,7 +539,7 @@ function renderWorkoutForm(){
   if(fc>0)ef.appendChild(el('p',{className:'eq-count'},`${fc} exercises available`));
   w.appendChild(ef);
 
-  const gb=el('button',{className:'gen-btn',onClick:doGenerate},S.loading?'Building your workout…':'Generate Workout →');
+  const gb=el('button',{className:'gen-btn'+(S.loading?' pulsing':''),onClick:doGenerate},S.loading?'Building your workout…':'Generate Workout →');
   if(S.loading)gb.setAttribute('disabled','true');
   w.appendChild(gb);
   if(S.error)w.appendChild(el('div',{className:'err'},S.error));
