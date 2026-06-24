@@ -229,7 +229,7 @@ let S={
   lightbox:null,
   kabob:null,swapModal:null,flashTarget:null,woAnimated:false,currentWorkoutId:null
 };
-if(S.apiKey)S.screen='main';
+S.screen='main';
 try{S.saved=JSON.parse(localStorage.getItem(LS_SAVED)||'[]');}catch(e){S.saved=[];}
 
 // Load exercises from GitHub
@@ -383,7 +383,7 @@ function applySwap(newName){
 function render(){
   const app=document.getElementById('app');app.innerHTML='';
   if(S.lightbox){const lb=el('div',{className:'lightbox',onClick:()=>{S.lightbox=null;render();}});lb.appendChild(el('img',{src:S.lightbox,alt:'',onClick:e=>e.stopPropagation()}));app.appendChild(lb);}
-  if(S.showSettings)app.appendChild(renderModal());
+
   if(S.kabob)app.appendChild(renderKabobSheet());
   if(S.swapModal)app.appendChild(renderSwapModal());
   if(S.screen==='setup'){app.appendChild(renderSetup());return;}
@@ -397,19 +397,12 @@ function render(){
 function renderSetup(){
   const w=el('div',{className:'setup'});
   w.appendChild(el('h2',{},'Workout Agent'));
-  w.appendChild(el('p',{},'Enter your Anthropic API key to get started.'));
-  const inp=el('input',{type:'password',placeholder:'sk-ant-…',id:'ki'});
-  const btn=el('button',{className:'gen-btn',style:{marginTop:'0'},onClick:()=>{const v=document.getElementById('ki').value.trim();if(!v)return;localStorage.setItem(LS_KEY,v);S.apiKey=v;S.screen='main';loadExercises();render();}});
-  btn.textContent='Get started';
-  const lnk=el('a',{href:'https://console.anthropic.com/settings/keys',target:'_blank',style:{color:'var(--acc)'}},'Get your API key →');
-  const hint=el('p',{className:'hint',style:{textAlign:'center'}});hint.appendChild(lnk);
-  const col=el('div',{style:{width:'100%',maxWidth:'380px',display:'flex',flexDirection:'column',gap:'14px'}});
-  col.append(inp,btn,hint);w.appendChild(col);return w;
+  return w;
 }
 
 function renderHdr(){
   const h=el('div',{className:'hdr'});h.appendChild(el('span',{},''));
-  h.appendChild(el('button',{className:'icon-btn',onClick:()=>{S.showSettings=true;S.settingsVal=S.apiKey;render();}},'⚙'));
+  h.appendChild(el('span',{},''));
   return h;
 }
 
@@ -423,19 +416,7 @@ function renderTabs(){
   return t;
 }
 
-function renderModal(){
-  const ov=el('div',{className:'modal-overlay',onClick:e=>{if(e.target===ov){S.showSettings=false;render();}}});
-  const m=el('div',{className:'modal'});
-  m.appendChild(el('h3',{},'Settings'));
-  m.appendChild(el('label',{className:'flbl'},'Anthropic API Key'));
-  const inp=el('input',{type:'password',placeholder:'sk-ant-…',value:S.settingsVal||'',onInput:e=>S.settingsVal=e.target.value});
-  m.appendChild(inp);
-  m.appendChild(el('p',{className:'hint'},'Stored in your browser only.'));
-  const btns=el('div',{className:'modal-btns'});
-  btns.appendChild(el('button',{className:'btn btn-ghost',onClick:()=>{S.showSettings=false;render();}},'Cancel'));
-  btns.appendChild(el('button',{className:'btn btn-pri',onClick:()=>{const v=(S.settingsVal||'').trim();if(!v)return;localStorage.setItem(LS_KEY,v);S.apiKey=v;S.showSettings=false;render();}},'Save'));
-  m.appendChild(btns);ov.appendChild(m);return ov;
-}
+
 
 function renderKabobSheet(){
   const{gIdx,eIdx,type}=S.kabob;
@@ -547,7 +528,6 @@ function renderWorkoutForm(){
 }
 
 async function doGenerate(){
-  if(!S.apiKey){S.error='No API key — tap ⚙ to add it.';render();return;}
   S.loading=true;S.workout=null;S.error=null;render();
   const filtered=getFiltered();
 
@@ -570,9 +550,9 @@ async function doGenerate(){
   const ml=S.muscles.includes('full_body')?'Full Body':S.muscles.map(id=>MUSCLES.find(m=>m.id===id)?.label||id).join(', ');
   const eqList=EQ_GROUPS.filter(g=>S.eq.includes(g.id)).map(g=>g.label).join(', ')||'Body Weight only';
   try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{
+    const res=await fetch('/api/generate',{
       method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':S.apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
         model:'claude-sonnet-4-6',max_tokens:1600,
         system:'Expert strength coach. Return ONLY a single valid JSON object. No markdown, no backticks. Start with { end with }. Exercise ordering rules: order_priority 1 (power_compound) goes first, priority 2 (primary compounds) second, priority 3 (accessory) third, priority 4 (isolation/finisher) last. Never place two exercises with the same movement_pattern back-to-back. Body weight exercises (role_hint: accessory or finisher) go in slots 3-4 of circuits, not slot 1.',
@@ -604,7 +584,7 @@ function renderWorkoutPage(){
   }});
   back.innerHTML='← Back';left.appendChild(back);
   hdr.appendChild(left);
-  hdr.appendChild(el('button',{className:'icon-btn',onClick:()=>{S.showSettings=true;S.settingsVal=S.apiKey;render();}},'⚙'));
+
   w.appendChild(hdr);
   const wo=S.workout;
   w.appendChild(el('p',{className:'session-eyebrow'},'Your Session'));
